@@ -9,21 +9,83 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator,
+  Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS, FONTS } from '../../utils/constants';
+import { useDispatch, useSelector } from 'react-redux';
+import { COLORS, FONTS, ICONS } from '../../utils/constants';
 import { ms } from '../../utils/helper/metric';
+import { signupRequest } from '../../redux/reducer/AuthReducer';
+import ToastAlert from '../../utils/helper/Toast';
 
 const Signup = () => {
   const navigation = useNavigation<any>();
+  const dispatch = useDispatch();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [phoneCode, setPhoneCode] = useState('91');
+  const [mobileNumber, setMobileNumber] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [secureText, setSecureText] = useState(true);
   const [secureConfirmText, setSecureConfirmText] = useState(true);
   const [agree, setAgree] = useState(false);
+
+  const { isReqLoading } = useSelector((state: any) => state.AuthReducer);
+
+  const handleSignup = () => {
+    if (!fullName.trim()) {
+      ToastAlert('Please enter your full name');
+      return;
+    }
+    if (!email.trim()) {
+      ToastAlert('Please enter your email');
+      return;
+    }
+    // Simple email regex validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      ToastAlert('Please enter a valid email address');
+      return;
+    }
+    if (!phoneCode.trim() || isNaN(Number(phoneCode))) {
+      ToastAlert('Please enter a valid phone code');
+      return;
+    }
+    if (!mobileNumber.trim() || isNaN(Number(mobileNumber))) {
+      ToastAlert('Please enter a valid mobile number');
+      return;
+    }
+    if (!password.trim()) {
+      ToastAlert('Please enter a password');
+      return;
+    }
+    if (password.trim().length < 6) {
+      ToastAlert('Password must be at least 6 characters long');
+      return;
+    }
+    if (password.trim() !== confirmPassword.trim()) {
+      ToastAlert('Passwords do not match');
+      return;
+    }
+    if (!agree) {
+      ToastAlert('Please agree to the Terms of Use and Privacy Policy');
+      return;
+    }
+
+    const payload = {
+      mobile_number: Number(mobileNumber.trim()),
+      phone_code: Number(phoneCode.trim()),
+      email: email.trim(),
+      name: fullName.trim(),
+      password: password.trim(),
+      confirm_password: confirmPassword.trim(),
+    };
+
+    dispatch(signupRequest(payload));
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -36,7 +98,7 @@ const Signup = () => {
           {/* Top Bar */}
           <View style={styles.topBar}>
             <View />
-            <TouchableOpacity style={styles.langButton} activeOpacity={0.7}>
+            <TouchableOpacity style={styles.langButton} activeOpacity={0.7} disabled={isReqLoading}>
               <Text style={styles.langText}>EN ▾</Text>
             </TouchableOpacity>
           </View>
@@ -52,6 +114,7 @@ const Signup = () => {
               placeholderTextColor="#9CA3AF"
               value={fullName}
               onChangeText={setFullName}
+              editable={!isReqLoading}
             />
 
             <TextInput
@@ -62,7 +125,35 @@ const Signup = () => {
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
+              editable={!isReqLoading}
             />
+
+            {/* Phone Code & Mobile Number Fields */}
+            <View style={styles.phoneContainer}>
+              <View style={styles.phoneCodeWrapper}>
+                <Text style={styles.phoneCodePrefix}>+</Text>
+                <TextInput
+                  style={styles.phoneCodeInput}
+                  placeholder="91"
+                  placeholderTextColor="#9CA3AF"
+                  value={phoneCode}
+                  onChangeText={setPhoneCode}
+                  keyboardType="number-pad"
+                  maxLength={4}
+                  editable={!isReqLoading}
+                />
+              </View>
+              <TextInput
+                style={styles.mobileInput}
+                placeholder="Mobile number"
+                placeholderTextColor="#9CA3AF"
+                value={mobileNumber}
+                onChangeText={setMobileNumber}
+                keyboardType="phone-pad"
+                maxLength={15}
+                editable={!isReqLoading}
+              />
+            </View>
 
             <View style={styles.passwordContainer}>
               <TextInput
@@ -73,13 +164,17 @@ const Signup = () => {
                 onChangeText={setPassword}
                 secureTextEntry={secureText}
                 autoCapitalize="none"
+                editable={!isReqLoading}
               />
               <TouchableOpacity
                 style={styles.eyeButton}
                 onPress={() => setSecureText(!secureText)}
                 activeOpacity={0.7}
+                disabled={isReqLoading}
               >
-                <Text style={styles.eyeText}>{secureText ? '👁️' : '👁️‍🗨️'}</Text>
+                {/* <Text style={styles.eyeText}>{secureText ? '👁️' : '👁️‍🗨️'}</Text> */}
+                <Image source={secureText ? ICONS.Eye : ICONS.viewoff} style={{ height: ms(18), width: ms(18), resizeMode: 'contain', tintColor: COLORS.black, marginRight: ms(8) }} />
+
               </TouchableOpacity>
             </View>
 
@@ -92,13 +187,17 @@ const Signup = () => {
                 onChangeText={setConfirmPassword}
                 secureTextEntry={secureConfirmText}
                 autoCapitalize="none"
+                editable={!isReqLoading}
               />
               <TouchableOpacity
                 style={styles.eyeButton}
                 onPress={() => setSecureConfirmText(!secureConfirmText)}
                 activeOpacity={0.7}
+                disabled={isReqLoading}
               >
-                <Text style={styles.eyeText}>{secureConfirmText ? '👁️' : '👁️‍🗨️'}</Text>
+                {/* <Text style={styles.eyeText}>{secureConfirmText ? '👁️' : '👁️‍🗨️'}</Text> */}
+                <Image source={secureConfirmText ? ICONS.Eye : ICONS.viewoff} style={{ height: ms(18), width: ms(18), resizeMode: 'contain', tintColor: COLORS.black, marginRight: ms(8) }} />
+
               </TouchableOpacity>
             </View>
 
@@ -107,6 +206,7 @@ const Signup = () => {
               style={styles.checkboxContainer}
               onPress={() => setAgree(!agree)}
               activeOpacity={0.8}
+              disabled={isReqLoading}
             >
               <View style={[styles.checkbox, agree && styles.checkboxActive]}>
                 {agree && <Text style={styles.checkMark}>✓</Text>}
@@ -119,10 +219,15 @@ const Signup = () => {
 
             <TouchableOpacity
               style={styles.primaryButton}
-              onPress={() => navigation.navigate('Otp')}
+              onPress={handleSignup}
               activeOpacity={0.8}
+              disabled={isReqLoading}
             >
-              <Text style={styles.primaryButtonText}>Sign Up</Text>
+              {isReqLoading ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.primaryButtonText}>Sign Up</Text>
+              )}
             </TouchableOpacity>
           </View>
 
@@ -192,6 +297,49 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     backgroundColor: '#FFFFFF',
     marginBottom: ms(16),
+  },
+  phoneContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ms(10),
+    marginBottom: ms(16),
+  },
+  phoneCodeWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: ms(85),
+    height: ms(54),
+    borderWidth: ms(1),
+    borderColor: '#E5E7EB',
+    borderRadius: ms(12),
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: ms(10),
+  },
+  phoneCodePrefix: {
+    fontFamily: FONTS.regular24,
+    fontSize: ms(15),
+    color: '#1F2937',
+    marginRight: ms(2),
+  },
+  phoneCodeInput: {
+    flex: 1,
+    height: '100%',
+    fontSize: ms(15),
+    fontFamily: FONTS.regular24,
+    color: '#1F2937',
+    padding: 0,
+  },
+  mobileInput: {
+    flex: 1,
+    height: ms(54),
+    borderWidth: ms(1),
+    borderColor: '#E5E7EB',
+    borderRadius: ms(12),
+    paddingHorizontal: ms(16),
+    fontSize: ms(15),
+    fontFamily: FONTS.regular24,
+    color: '#1F2937',
+    backgroundColor: '#FFFFFF',
   },
   passwordContainer: {
     flexDirection: 'row',

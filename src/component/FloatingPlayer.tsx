@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   StyleSheet,
   Text,
@@ -9,19 +9,46 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
+import TrackPlayer, { State, useActiveTrack, usePlaybackState } from 'react-native-track-player';
 import { COLORS, FONTS } from '../utils/constants';
 import { ms } from '../utils/helper/metric';
 
 const FloatingPlayer = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
-  const [isPlaying, setIsPlaying] = useState(false);
+  
+  const activeTrack = useActiveTrack();
+  const playbackState = usePlaybackState();
+
+  // If no track is loaded, don't show the floating player
+  if (!activeTrack) {
+    return null;
+  }
+
+  const stateVal = typeof playbackState === 'object' && playbackState !== null ? (playbackState as any).state : playbackState;
+  const isPlaying = stateVal === State.Playing || stateVal === 'playing' || stateVal === 'buffering' || stateVal === State.Buffering;
+
+  const togglePlayback = async () => {
+    try {
+      if (isPlaying) {
+        await TrackPlayer.pause();
+      } else {
+        await TrackPlayer.play();
+      }
+    } catch (error) {
+      console.error("Error toggling playback in FloatingPlayer:", error);
+    }
+  };
+
+  const albumArt = typeof activeTrack.artwork === 'string' && activeTrack.artwork
+    ? activeTrack.artwork
+    : 'https://picsum.photos/200/200?random=106';
 
   return (
     <TouchableOpacity
       style={[styles.floatingPlayer, { bottom: ms(66) + insets.bottom + ms(8) }]}
       activeOpacity={0.9}
-      onPress={() => navigation.navigate('MusicPlay')}
+      onPress={() => navigation.navigate('MusicPlay', { track: activeTrack })}
     >
       <LinearGradient
         colors={[COLORS.playGradientStart, COLORS.playGradientMiddle, COLORS.playGradientEnd]}
@@ -32,17 +59,21 @@ const FloatingPlayer = () => {
 
       <View style={styles.playerInner}>
         <Image
-          source={{ uri: 'https://picsum.photos/200/200?random=106' }}
+          source={{ uri: albumArt }}
           style={styles.playerArt}
         />
         <View style={styles.playerDetails}>
-          <Text style={styles.playerTitle} numberOfLines={1}>Blinding Lights</Text>
-          <Text style={styles.playerArtist} numberOfLines={1}>The Weeknd</Text>
+          <Text style={styles.playerTitle} numberOfLines={1}>
+            {activeTrack.title || 'Blinding Lights'}
+          </Text>
+          <Text style={styles.playerArtist} numberOfLines={1}>
+            {activeTrack.artist || 'The Weeknd'}
+          </Text>
         </View>
 
         <TouchableOpacity
           style={styles.playerPlayBtn}
-          onPress={() => setIsPlaying(!isPlaying)}
+          onPress={togglePlayback}
           activeOpacity={0.8}
         >
           {isPlaying ? (
@@ -74,6 +105,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 10,
     elevation: 6,
+    zIndex: 999,
   },
   playerInner: {
     flex: 1,

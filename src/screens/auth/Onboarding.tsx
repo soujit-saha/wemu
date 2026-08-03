@@ -11,8 +11,11 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useDispatch } from 'react-redux';
 import { COLORS, FONTS, IMAGES } from '../../utils/constants';
 import { ms } from '../../utils/helper/metric';
+import { setOnboardingSeen } from '../../redux/reducer/AuthReducer';
 
 const { width } = Dimensions.get('window');
 
@@ -46,10 +49,11 @@ const slides: SlideItem[] = [
 
 const Onboarding = () => {
     const navigation = useNavigation<any>();
+    const dispatch = useDispatch();
     const [activeIndex, setActiveIndex] = useState(0);
     const flatListRef = useRef<FlatList<SlideItem>>(null);
 
-    const handleButtonPress = () => {
+    const handleButtonPress = async () => {
         if (activeIndex < slides.length - 1) {
             const nextIndex = activeIndex + 1;
             flatListRef.current?.scrollToIndex({
@@ -58,6 +62,12 @@ const Onboarding = () => {
             });
             setActiveIndex(nextIndex);
         } else {
+            try {
+                await AsyncStorage.setItem('HAS_SEEN_ONBOARDING', 'true');
+                dispatch(setOnboardingSeen(true));
+            } catch (error) {
+                console.log('Error saving onboarding state:', error);
+            }
             navigation.replace('Login');
         }
     };

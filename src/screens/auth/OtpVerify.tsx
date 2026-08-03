@@ -16,46 +16,57 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { COLORS, FONTS, ICONS } from '../../utils/constants';
 import { ms } from '../../utils/helper/metric';
-import { verifyOTPRequest } from '../../redux/reducer/AuthReducer';
+import { forgotPasswordRequest } from '../../redux/reducer/AuthReducer';
 import ToastAlert from '../../utils/helper/Toast';
 
-const Otp = () => {
+const OtpVerify = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const dispatch = useDispatch();
-  const [code, setCode] = useState(['', '', '', '', '', '']);
+  const [code, setCode] = useState(['', '', '', '']);
   const [timer, setTimer] = useState(30);
 
-  const { isReqLoading, signUpRes } = useSelector((state: any) => state.AuthReducer);
+  const { isReqLoading, ForgotPasswordRes } = useSelector((state: any) => state.AuthReducer);
 
-  const mobileNumber = route.params?.mobile_number || 1900190019;
+  const email = route.params?.email || '';
 
   const otpFromResponse =
-    signUpRes?.otp ||
-    signUpRes?.data?.otp ||
-    signUpRes?.verification_code ||
-    signUpRes?.data?.verification_code ||
-    signUpRes?.code ||
-    signUpRes?.data?.code;
+    route.params?.data?.otp ||
+    route.params?.data?.data?.otp ||
+    route.params?.data?.verification_code ||
+    route.params?.data?.data?.verification_code ||
+    route.params?.data?.code ||
+    route.params?.data?.data?.code ||
+    ForgotPasswordRes?.otp ||
+    ForgotPasswordRes?.data?.otp ||
+    ForgotPasswordRes?.verification_code ||
+    ForgotPasswordRes?.data?.verification_code ||
+    ForgotPasswordRes?.code ||
+    ForgotPasswordRes?.data?.code;
 
   const handleVerify = () => {
     const fullCode = code.join('');
-    if (fullCode.length < 6 || isNaN(Number(fullCode))) {
-      ToastAlert('Please enter a valid 6-digit verification code');
+    if (fullCode.length < 4 || isNaN(Number(fullCode))) {
+      ToastAlert('Please enter a valid 4-digit verification code');
       return;
     }
-    dispatch(
-      verifyOTPRequest({
-        mobile_number: Number(mobileNumber),
-        verification_code: Number(fullCode),
-      }),
-    );
+
+    if (!otpFromResponse) {
+      ToastAlert('Verification code not found. Please resend the code.');
+      return;
+    }
+
+    if (String(otpFromResponse) !== String(fullCode)) {
+      ToastAlert('Invalid verification code. Please try again.');
+      return;
+    }
+
+    // Navigate to ResetPassword with email and verification code
+    navigation.navigate('ResetPassword', { email: email, code: fullCode });
   };
 
   // Focus navigation refs
   const inputRefs = [
-    useRef<TextInput>(null),
-    useRef<TextInput>(null),
     useRef<TextInput>(null),
     useRef<TextInput>(null),
     useRef<TextInput>(null),
@@ -80,7 +91,7 @@ const Otp = () => {
     setCode(newCode);
 
     // Auto-focus next input
-    if (text.length > 0 && index < 5) {
+    if (text.length > 0 && index < 3) {
       inputRefs[index + 1].current?.focus();
     }
   };
@@ -95,8 +106,11 @@ const Otp = () => {
   const handleResend = () => {
     if (timer === 0) {
       setTimer(30);
-      setCode(['', '', '', '', '', '']);
+      setCode(['', '', '', '']);
       inputRefs[0].current?.focus();
+      if (email) {
+        dispatch(forgotPasswordRequest({ email }));
+      }
     }
   };
 
@@ -121,10 +135,10 @@ const Otp = () => {
 
           {/* Title and Subtitle */}
           <View style={styles.titleContainer}>
-            <Text style={styles.title}>Verify Your Number</Text>
+            <Text style={styles.title}>Verify Your Email</Text>
             <Text style={styles.subtitle}>
-              Enter the 6-digit code sent to{'\n'}
-              <Text style={styles.phoneNumber}>+{route.params?.phone_code || 91} {mobileNumber}</Text>
+              Enter the 4-digit code sent to{'\n'}
+              <Text style={styles.emailText}>{email}</Text>
             </Text>
             {otpFromResponse ? (
               <View style={styles.otpBanner}>
@@ -135,7 +149,7 @@ const Otp = () => {
             ) : null}
           </View>
 
-          {/* 6 Digit Inputs */}
+          {/* 4 Digit Inputs */}
           <View style={styles.otpRow}>
             {code.map((digit, idx) => (
               <TextInput
@@ -190,7 +204,7 @@ const Otp = () => {
   );
 };
 
-export default Otp;
+export default OtpVerify;
 
 const styles = StyleSheet.create({
   container: {
@@ -256,7 +270,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: ms(22),
   },
-  phoneNumber: {
+  emailText: {
     fontFamily: FONTS.semiBold24,
     color: '#1F2937',
   },

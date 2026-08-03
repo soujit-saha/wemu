@@ -7,26 +7,25 @@ import { COLORS, FONTS, IMAGES } from '../../utils/constants';
 import { ms, mvs } from '../../utils/helper/metric';
 import { replace } from '../../utils/helper/RootNavigation';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { getTokenRequest } from '../../redux/reducer/AuthReducer';
 
 const SplashScreen = () => {
 
 
-
-    //   useEffect(() => {
-    //     // Dispatch action to fetch saved session token on mount
-    //     dispatch(getTokenRequest());
-    //   }, [dispatch]);
-
+    const dispatch = useDispatch();
     useEffect(() => {
-        // Navigate after a short delay once token check is completed
+        // Dispatch action to fetch saved session token on mount
+
 
         const timer = setTimeout(() => {
 
-            replace('Onboarding');
+            dispatch(getTokenRequest());
 
         }, 2500); // 2.5 seconds delay for premium branding feel
         return () => clearTimeout(timer);
     }, []);
+
+
 
     return (
         <SafeAreaView style={styles.container}>

@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View, Image, StatusBar, TouchableOpacity, Dimensions, ScrollView } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { COLORS, FONTS, ICONS } from '../../utils/constants';
 import { ms } from '../../utils/helper/metric';
@@ -9,8 +9,8 @@ import TrackPlayer, { Capability, State, usePlaybackState, useProgress, AppKille
 
 const MusicPlay = () => {
     const insets = useSafeAreaInsets();
-    const navigation = useNavigation<any>();
-    const route = useRoute<any>();
+    const navigation = useNavigation < any > ();
+    const route = useRoute < any > ();
 
     const track = route.params?.track;
     const trackTitle = track?.title || 'Blinding Lights';
@@ -20,10 +20,6 @@ const MusicPlay = () => {
         : track?.subtitle || track?.artist || 'The Weeknd';
 
     const albumArt = track?.cover_image_path || track?.image || track?.artwork || 'https://picsum.photos/400/400?random=109';
-
-    const lyricsLines = track?.lyrics
-        ? track.lyrics.split(/\r?\n/).map((line: string) => line.trim()).filter(Boolean)
-        : [];
 
     const parseDuration = (durationStr: any) => {
         if (!durationStr) return 200; // default 3:20
@@ -56,27 +52,6 @@ const MusicPlay = () => {
     const [isPlayerReady, setIsPlayerReady] = useState(false);
     const [isLiked, setIsLiked] = useState(false);
     const [showLyrics, setShowLyrics] = useState(false);
-    const [expandLyrics, setExpandLyrics] = useState(false);
-
-    const currentLineIndex = lyricsLines.length > 0 && totalDuration > 0
-        ? Math.min(Math.floor((progress / totalDuration) * lyricsLines.length), lyricsLines.length - 1)
-        : 0;
-
-    // Determine which lines of lyrics to display in the card (and their original indices)
-    let visibleLyrics: { line: string; originalIndex: number }[] = [];
-    if (expandLyrics) {
-        visibleLyrics = lyricsLines.map((line: string, idx: number) => ({ line, originalIndex: idx }));
-    } else {
-        let start = Math.max(0, currentLineIndex - 2);
-        let end = Math.min(lyricsLines.length, start + 5);
-        if (end - start < 5) {
-            start = Math.max(0, end - 5);
-        }
-        visibleLyrics = lyricsLines.slice(start, end).map((line: string, idx: number) => ({
-            line,
-            originalIndex: start + idx
-        }));
-    }
 
     // Setup TrackPlayer once on component mount
     useEffect(() => {
@@ -258,240 +233,163 @@ const MusicPlay = () => {
         </View>
     );
 
-    // console.log('1234567890', route.params)
-
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={styles.container}>
             <StatusBar
                 barStyle="light-content"
                 backgroundColor="transparent"
                 translucent={true}
             />
-            <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
-                <View
-                    style={{
-                        height: Dimensions.get("window").height * 0.95,
-                        width: Dimensions.get("window").width,
-                        // backgroundColor: 'red',
-                        // paddingBottom: insets.bottom || ms(20)
-                    }}
-                >
 
+            {/* Background Gradient matching the mock exactly */}
+            <LinearGradient
+                colors={[COLORS.playGradientStart, COLORS.playGradientMiddle, COLORS.playGradientEnd]}
+                style={StyleSheet.absoluteFill}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+            />
 
-                    {/* Background Gradient matching the mock exactly */}
-                    <LinearGradient
-                        colors={[COLORS.playGradientStart, COLORS.playGradientMiddle, COLORS.playGradientEnd]}
-                        style={StyleSheet.absoluteFill}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 0.5, y: 1 }}
-                    />
+            <View style={[styles.safeArea, { paddingTop: insets.top, paddingBottom: insets.bottom || ms(20) }]}>
 
-                    <View style={[styles.safeArea,
-                        // { paddingTop: insets.top, paddingBottom: insets.bottom || ms(20) }
-                    ]}>
+                {/* Header Row */}
+                <View style={styles.header}>
+                    <TouchableOpacity
+                        onPress={() => navigation.goBack()}
+                        style={styles.headerButton}
+                        activeOpacity={0.7}
+                    >
+                        <Image source={ICONS.leftarrow} style={styles.backIcon} />
+                    </TouchableOpacity>
 
-                        {/* Header Row */}
-                        <View style={styles.header}>
-                            <TouchableOpacity
-                                onPress={() => navigation.goBack()}
-                                style={styles.headerButton}
-                                activeOpacity={0.7}
-                            >
-                                <Image source={ICONS.leftarrow} style={styles.backIcon} />
-                            </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Now Playing</Text>
 
-                            <Text style={styles.headerTitle}>Now Playing</Text>
-
-                            <TouchableOpacity
-                                onPress={() => navigation.navigate('Share')}
-                                style={[styles.headerButton, { alignItems: 'flex-end' }]}
-                                activeOpacity={0.7}
-                            >
-                                <MenuIcon />
-                            </TouchableOpacity>
-                        </View>
-
-                        {/* Album Artwork / Lyrics */}
-                        <TouchableOpacity
-                            activeOpacity={track?.lyrics ? 0.9 : 1}
-                            onPress={() => track?.lyrics ? setShowLyrics(!showLyrics) : null}
-                            style={styles.albumArtContainer}
-                        >
-                            <View style={styles.albumArtShadowWrapper}>
-                                {showLyrics && track?.lyrics ? (
-                                    <ScrollView
-                                        style={[styles.albumArt, { backgroundColor: 'rgba(0, 0, 0, 0.85)', padding: ms(20) }]}
-                                        contentContainerStyle={{ paddingBottom: ms(45) }}
-                                        showsVerticalScrollIndicator={false}
-                                    >
-                                        <Text style={{ fontFamily: FONTS.bold28, fontSize: ms(18), color: '#FFFFFF', marginBottom: ms(12), textAlign: 'center' }}>Lyrics</Text>
-                                        <Text style={{ fontFamily: FONTS.regular24, fontSize: ms(14), color: 'rgba(255, 255, 255, 0.9)', lineHeight: ms(22), textAlign: 'center' }}>
-                                            {track.lyrics}
-                                        </Text>
-                                    </ScrollView>
-                                ) : (
-                                    <Image
-                                        source={{ uri: albumArt }}
-                                        style={styles.albumArt}
-                                    />
-                                )}
-                            </View>
-                        </TouchableOpacity>
-
-                        {/* Track Title and Artist */}
-                        <View style={styles.trackInfoRow}>
-                            <View style={styles.trackDetails}>
-                                <Text style={styles.trackTitle} numberOfLines={1}>{trackTitle}</Text>
-                                <Text style={styles.artistName} numberOfLines={1}>{artistName}</Text>
-                            </View>
-
-                            <TouchableOpacity
-                                onPress={() => setIsLiked(!isLiked)}
-                                style={styles.likeButton}
-                                activeOpacity={0.7}
-                            >
-                                {/* <Text style={[styles.likeText, isLiked && styles.likeTextActive]}>
-                                    {isLiked ? '♥' : '♡'}
-                                </Text> */}
-                                <Image source={isLiked ? ICONS.heart_ac : ICONS.heart}
-                                    style={{ width: ms(24), height: ms(24), resizeMode: 'contain', tintColor: COLORS.white }} />
-                            </TouchableOpacity>
-                        </View>
-
-                        {/* Progress Slider (Interactive Seeker) */}
-                        <TouchableOpacity
-                            activeOpacity={1}
-                            onPress={handleProgressBarPress}
-                            style={{ ...styles.progressContainer, }}
-                        >
-                            <View style={styles.progressBarBackground}>
-                                <View style={[styles.progressBarActive, { width: `${activePercent}%` }]} />
-                                <View style={[styles.progressThumb, { left: `${activePercent}%` }]} />
-                            </View>
-                            <View style={styles.timeRow}>
-                                <Text style={styles.timeText}>{formatTime(progress)}</Text>
-                                <Text style={styles.timeText}>{formatTime(totalDuration)}</Text>
-                            </View>
-                        </TouchableOpacity>
-
-                        {/* Playback Controls */}
-                        <View style={{ ...styles.controlsRow, }}>
-                            {/* Shuffle Button */}
-                            <TouchableOpacity style={styles.controlButton} activeOpacity={0.7}>
-                                <Image source={ICONS.shuffle} style={styles.Icon24} />
-                            </TouchableOpacity>
-
-                            {/* Skip Previous */}
-                            <TouchableOpacity
-                                onPress={() => TrackPlayer.seekTo(0)}
-                                style={styles.controlButton}
-                                activeOpacity={0.7}
-                            >
-                                <PrevIcon />
-                            </TouchableOpacity>
-
-                            {/* Play / Pause Toggle */}
-                            <TouchableOpacity
-                                onPress={togglePlayback}
-                                style={styles.playPauseButton}
-                                activeOpacity={0.8}
-                            >
-                                {isPlaying ? <PauseIcon /> : <PlayIcon />}
-                            </TouchableOpacity>
-
-                            {/* Skip Next */}
-                            <TouchableOpacity
-                                onPress={() => TrackPlayer.seekTo(0)}
-                                style={styles.controlButton}
-                                activeOpacity={0.7}
-                            >
-                                <NextIcon />
-                            </TouchableOpacity>
-
-                            {/* Repeat Button */}
-                            <TouchableOpacity style={styles.controlButton} activeOpacity={0.7}>
-                                <Image source={ICONS.loop} style={styles.Icon24} />
-                            </TouchableOpacity>
-                        </View>
-
-                        {/* Footer Navigation bar */}
-                        <View style={styles.footer}>
-                            <TouchableOpacity style={styles.footerButton} activeOpacity={0.7}>
-                                <LibraryIcon />
-                            </TouchableOpacity>
-
-                            <TouchableOpacity style={styles.footerButton} activeOpacity={0.7}>
-                                <ListIcon />
-                            </TouchableOpacity>
-
-                            <TouchableOpacity style={styles.footerButton} activeOpacity={0.7}>
-                                <Text style={styles.globeIcon}>🌐</Text>
-                            </TouchableOpacity>
-                        </View>
-
-
-                    </View>
-
-
+                    <TouchableOpacity
+                        onPress={() => navigation.navigate('Share')}
+                        style={[styles.headerButton, { alignItems: 'flex-end' }]}
+                        activeOpacity={0.7}
+                    >
+                        <MenuIcon />
+                    </TouchableOpacity>
                 </View>
 
-                {/* Lyrics Preview Card */}
-                {lyricsLines.length > 0 && (
-                    <View style={styles.lyricsCard}>
-                        <Text style={styles.lyricsCardHeader}>Lyrics preview</Text>
-                        <View style={styles.lyricsContent}>
-                            {visibleLyrics.map((item) => (
-                                <Text
-                                    key={item.originalIndex}
-                                    style={item.originalIndex === currentLineIndex ? styles.lyricsLineActive : styles.lyricsLine}
-                                >
-                                    {item.line}
-                                </Text>
-                            ))}
-                        </View>
-                        {lyricsLines.length > 5 && (
-                            <TouchableOpacity
-                                onPress={() => setExpandLyrics(!expandLyrics)}
-                                style={styles.showLyricsButton}
-                                activeOpacity={0.8}
+                {/* Album Artwork / Lyrics */}
+                <TouchableOpacity
+                    activeOpacity={track?.lyrics ? 0.9 : 1}
+                    onPress={() => track?.lyrics ? setShowLyrics(!showLyrics) : null}
+                    style={styles.albumArtContainer}
+                >
+                    <View style={styles.albumArtShadowWrapper}>
+                        {showLyrics && track?.lyrics ? (
+                            <ScrollView
+                                style={[styles.albumArt, { backgroundColor: 'rgba(0, 0, 0, 0.85)', padding: ms(20) }]}
+                                contentContainerStyle={{ paddingBottom: ms(45) }}
+                                showsVerticalScrollIndicator={false}
                             >
-                                <Text style={styles.showLyricsButtonText}>
-                                    {expandLyrics ? 'Hide lyrics' : 'Show lyrics'}
+                                <Text style={{ fontFamily: FONTS.bold28, fontSize: ms(18), color: '#FFFFFF', marginBottom: ms(12), textAlign: 'center' }}>Lyrics</Text>
+                                <Text style={{ fontFamily: FONTS.regular24, fontSize: ms(14), color: 'rgba(255, 255, 255, 0.9)', lineHeight: ms(22), textAlign: 'center' }}>
+                                    {track.lyrics}
                                 </Text>
-                            </TouchableOpacity>
+                            </ScrollView>
+                        ) : (
+                            <Image
+                                source={{ uri: albumArt }}
+                                style={styles.albumArt}
+                            />
                         )}
                     </View>
-                )}
+                </TouchableOpacity>
 
-                {/* About the Artist Card */}
-                <View style={styles.artistCard}>
-                    <View style={styles.artistImageContainer}>
-                        <Image
-                            source={{ uri: 'https://picsum.photos/400/400?random=artist' }}
-                            style={styles.artistCardImage}
-                        />
-                        <Text style={styles.artistCardBadge}>About the artist</Text>
+                {/* Track Title and Artist */}
+                <View style={styles.trackInfoRow}>
+                    <View style={styles.trackDetails}>
+                        <Text style={styles.trackTitle} numberOfLines={1}>{trackTitle}</Text>
+                        <Text style={styles.artistName} numberOfLines={1}>{artistName}</Text>
                     </View>
-                    <View style={styles.artistCardInfo}>
-                        <View style={styles.artistNameRow}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <Text style={styles.artistCardName}>Akhil Sachdeva</Text>
-                                <View style={styles.verifiedBadge}>
-                                    <Text style={styles.verifiedBadgeText}>✓</Text>
-                                </View>
-                            </View>
-                            <TouchableOpacity style={styles.followButton} activeOpacity={0.8}>
-                                <Text style={styles.followButtonText}>Follow</Text>
-                            </TouchableOpacity>
-                        </View>
-                        <Text style={styles.monthlyListeners}>1.3Cr monthly listeners</Text>
-                        <Text style={styles.artistBio} numberOfLines={3}>
-                            Akhil Sachdeva is an Indian musician, singer and composer. His song Humsafar was featured in the Bollywood film Badrinath Ki Dulhania.... <Text style={styles.seeMoreText}>see more</Text>
+
+                    <TouchableOpacity
+                        onPress={() => setIsLiked(!isLiked)}
+                        style={styles.likeButton}
+                        activeOpacity={0.7}
+                    >
+                        <Text style={[styles.likeText, isLiked && styles.likeTextActive]}>
+                            {isLiked ? '♥' : '♡'}
                         </Text>
-                    </View>
+                    </TouchableOpacity>
                 </View>
-            </ScrollView>
-        </SafeAreaView>
+
+                {/* Progress Slider (Interactive Seeker) */}
+                <TouchableOpacity
+                    activeOpacity={1}
+                    onPress={handleProgressBarPress}
+                    style={styles.progressContainer}
+                >
+                    <View style={styles.progressBarBackground}>
+                        <View style={[styles.progressBarActive, { width: `${activePercent}%` }]} />
+                        <View style={[styles.progressThumb, { left: `${activePercent}%` }]} />
+                    </View>
+                    <View style={styles.timeRow}>
+                        <Text style={styles.timeText}>{formatTime(progress)}</Text>
+                        <Text style={styles.timeText}>{formatTime(totalDuration)}</Text>
+                    </View>
+                </TouchableOpacity>
+
+                {/* Playback Controls */}
+                <View style={styles.controlsRow}>
+                    {/* Shuffle Button */}
+                    <TouchableOpacity style={styles.controlButton} activeOpacity={0.7}>
+                        <Image source={ICONS.shuffle} style={styles.Icon24} />
+                    </TouchableOpacity>
+
+                    {/* Skip Previous */}
+                    <TouchableOpacity
+                        onPress={() => TrackPlayer.seekTo(0)}
+                        style={styles.controlButton}
+                        activeOpacity={0.7}
+                    >
+                        <PrevIcon />
+                    </TouchableOpacity>
+
+                    {/* Play / Pause Toggle */}
+                    <TouchableOpacity
+                        onPress={togglePlayback}
+                        style={styles.playPauseButton}
+                        activeOpacity={0.8}
+                    >
+                        {isPlaying ? <PauseIcon /> : <PlayIcon />}
+                    </TouchableOpacity>
+
+                    {/* Skip Next */}
+                    <TouchableOpacity
+                        onPress={() => TrackPlayer.seekTo(0)}
+                        style={styles.controlButton}
+                        activeOpacity={0.7}
+                    >
+                        <NextIcon />
+                    </TouchableOpacity>
+
+                    {/* Repeat Button */}
+                    <TouchableOpacity style={styles.controlButton} activeOpacity={0.7}>
+                        <Image source={ICONS.loop} style={styles.Icon24} />
+                    </TouchableOpacity>
+                </View>
+
+                {/* Footer Navigation bar */}
+                <View style={styles.footer}>
+                    <TouchableOpacity style={styles.footerButton} activeOpacity={0.7}>
+                        <LibraryIcon />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.footerButton} activeOpacity={0.7}>
+                        <ListIcon />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.footerButton} activeOpacity={0.7}>
+                        <Text style={styles.globeIcon}>🌐</Text>
+                    </TouchableOpacity>
+                </View>
+
+            </View>
+        </View>
     );
 };
 
@@ -500,7 +398,6 @@ export default MusicPlay;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: COLORS.playGradientEnd
     },
     safeArea: {
         flex: 1,
@@ -637,7 +534,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: ms(32),
-        marginTop: ms(-5)
     },
     controlButton: {
         width: ms(44),
@@ -737,7 +633,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: ms(36),
         borderTopWidth: StyleSheet.hairlineWidth,
         borderTopColor: 'rgba(255, 255, 255, 0.15)',
-        paddingVertical: ms(8),
+        paddingTop: ms(12),
     },
     footerButton: {
         width: ms(48),
@@ -793,147 +689,4 @@ const styles = StyleSheet.create({
         borderRadius: 1,
         marginLeft: ms(3),
     },
-
-
-    /////////////////////////////////////////////////////////////////
-
-
-    lyricsCard: {
-        marginHorizontal: ms(24),
-        borderRadius: ms(16),
-        backgroundColor: COLORS.playGradientStart, // Dark maroon color from screenshot
-        padding: ms(20),
-        marginBottom: ms(24),
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.15,
-        shadowRadius: 10,
-        elevation: 6,
-    },
-    lyricsCardHeader: {
-        fontFamily: FONTS.bold28,
-        fontSize: ms(16),
-        color: '#FFFFFF',
-        marginBottom: ms(16),
-    },
-    lyricsContent: {
-        gap: ms(12),
-        marginBottom: ms(20),
-    },
-    lyricsLine: {
-        fontFamily: FONTS.medium24,
-        fontSize: ms(16),
-        color: 'rgba(255, 255, 255, 0.65)',
-        lineHeight: ms(24),
-    },
-    lyricsLineActive: {
-        fontFamily: FONTS.bold28,
-        fontSize: ms(20),
-        color: '#FFFFFF',
-        lineHeight: ms(28),
-        marginTop: ms(4),
-    },
-    showLyricsButton: {
-        alignSelf: 'flex-start',
-        backgroundColor: '#FFFFFF',
-        borderRadius: ms(20),
-        paddingHorizontal: ms(18),
-        paddingVertical: ms(8),
-    },
-    showLyricsButtonText: {
-        fontFamily: FONTS.bold24,
-        fontSize: ms(13),
-        color: '#000000',
-    },
-    artistCard: {
-        marginHorizontal: ms(24),
-        borderRadius: ms(16),
-        backgroundColor: COLORS.playGradientMiddle, // Dark card color
-        overflow: 'hidden',
-        marginBottom: ms(40),
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.15,
-        shadowRadius: 10,
-        elevation: 6,
-    },
-    artistImageContainer: {
-        height: ms(220),
-        position: 'relative',
-    },
-    artistCardImage: {
-        width: '100%',
-        height: '100%',
-        resizeMode: 'cover',
-    },
-    artistCardBadge: {
-        position: 'absolute',
-        top: ms(16),
-        left: ms(16),
-        fontFamily: FONTS.bold28,
-        fontSize: ms(16),
-        color: '#FFFFFF',
-        textShadowColor: 'rgba(0, 0, 0, 0.6)',
-        textShadowOffset: { width: 1, height: 1 },
-        textShadowRadius: 3,
-    },
-    artistCardInfo: {
-        padding: ms(20),
-    },
-    artistNameRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    artistCardName: {
-        fontFamily: FONTS.bold28,
-        fontSize: ms(18),
-        color: '#FFFFFF',
-    },
-    verifiedBadge: {
-        width: ms(16),
-        height: ms(16),
-        borderRadius: ms(8),
-        backgroundColor: '#1DB954', // Spotify green badge
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginLeft: ms(6),
-    },
-    verifiedBadgeText: {
-        color: '#FFFFFF',
-        fontSize: ms(10),
-        fontWeight: 'bold',
-        includeFontPadding: false,
-    },
-    followButton: {
-        borderWidth: ms(1),
-        borderColor: '#FFFFFF',
-        borderRadius: ms(16),
-        paddingHorizontal: ms(16),
-        paddingVertical: ms(6),
-    },
-    followButtonText: {
-        fontFamily: FONTS.bold24,
-        fontSize: ms(12),
-        color: '#FFFFFF',
-    },
-    monthlyListeners: {
-        fontFamily: FONTS.regular24,
-        fontSize: ms(13),
-        color: 'rgba(255, 255, 255, 0.6)',
-        marginTop: ms(4),
-        marginBottom: ms(12),
-    },
-    artistBio: {
-        fontFamily: FONTS.regular24,
-        fontSize: ms(13),
-        color: 'rgba(255, 255, 255, 0.8)',
-        lineHeight: ms(20),
-    },
-    seeMoreText: {
-        fontFamily: FONTS.bold24,
-        color: '#FFFFFF',
-    },
-
-
 });

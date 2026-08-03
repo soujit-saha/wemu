@@ -7,6 +7,9 @@ import App from './App';
 import { name as appName } from './app.json';
 import { Provider } from 'react-redux';
 import Store from './src/redux/Store';
+import TrackPlayer from 'react-native-track-player';
+import { playbackService } from './src/services/playbackService';
+
 LogBox.ignoreLogs(['Warning: ...']); // Ignore log notification by message
 LogBox.ignoreAllLogs();
 
@@ -20,4 +23,5 @@ const WemuApp = () => {
 };
 
 AppRegistry.registerComponent(appName, () => WemuApp);
+TrackPlayer.registerPlaybackService(() => playbackService);
 

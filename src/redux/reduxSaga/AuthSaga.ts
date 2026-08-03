@@ -19,6 +19,7 @@ import {
   resetPasswordFailure,
   deleteAccountSuccess,
   deleteAccountFailure,
+  setOnboardingSeen,
 } from '../reducer/AuthReducer';
 // import { getApi, postApi } from '../../utils/helper/ApiRequest';
 import { ApiHeaders, ApiResponse } from '../types';
@@ -45,6 +46,12 @@ export function* getTokenSaga(): Generator<any, void, any> {
       AsyncStorage.getItem,
       constants?.TOKEN,
     );
+    const onboardingSeen: string | null = yield call(
+      AsyncStorage.getItem,
+      'HAS_SEEN_ONBOARDING',
+    );
+
+    yield put(setOnboardingSeen(onboardingSeen === 'true'));
 
     if (response != null) {
       const tokenData = JSON.parse(response);
@@ -68,7 +75,7 @@ export function* loginSaga(
   try {
     const response: ApiResponse = yield call(
       postApi,
-      'login',
+      'login-email',
       action.payload,
       header,
     );
@@ -100,7 +107,7 @@ export function* signupSaga(
   try {
     const response: ApiResponse = yield call(
       postApi,
-      'register',
+      'signup',
       action.payload,
       header,
     );
@@ -134,7 +141,7 @@ export function* verifyOTPSaga(
   try {
     const response: ApiResponse = yield call(
       postApi,
-      'verify-otp',
+      'login/verification',
       action.payload,
       header,
     );
@@ -190,7 +197,7 @@ export function* forgotPasswordSaga(
   try {
     const response: ApiResponse = yield call(
       postApi,
-      'forgot-password',
+      'forgot/password',
       action.payload,
       header,
     );
@@ -198,7 +205,7 @@ export function* forgotPasswordSaga(
     console.log('forgot password response', response);
     yield put(forgotPasswordSuccess(response?.data));
     ToastAlert(response?.data?.message || 'Reset link sent');
-    navigate('ResetPassword', { email: action.payload.email });
+    navigate('OtpVerify', { email: action.payload.email });
   } catch (error: any) {
     console.log(error);
     yield put(forgotPasswordFailure(error));
@@ -217,7 +224,7 @@ export function* resetPasswordSaga(
   try {
     const response: ApiResponse = yield call(
       postApi,
-      'reset-password',
+      'reset/password',
       action.payload,
       header,
     );
@@ -253,11 +260,11 @@ export function* deleteAccountSaga(
 
     console.log('delete account response', response);
     yield put(deleteAccountSuccess(response?.data));
-    
+
     // Clear token and sign user out locally
     yield call(AsyncStorage.removeItem, constants.TOKEN);
-    yield put(getTokenSuccess(null)); 
-    
+    yield put(getTokenSuccess(null));
+
     ToastAlert(response?.data?.message || 'Account deleted successfully');
   } catch (error: any) {
     console.log(error);

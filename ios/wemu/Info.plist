@@ -110,6 +110,9 @@
 		<string>Inter_28pt-SemiBoldItalic.ttf</string>
 		<string>Inter_28pt-Thin.ttf</string>
 		<string>Inter_28pt-ThinItalic.ttf</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
 	</array>
 </dict>
 </plist>

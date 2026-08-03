@@ -10,17 +10,36 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useDispatch, useSelector } from 'react-redux';
 import { COLORS, FONTS, ICONS } from '../../utils/constants';
 import { ms } from '../../utils/helper/metric';
+import { loginRequest } from '../../redux/reducer/AuthReducer';
+import ToastAlert from '../../utils/helper/Toast';
 
 const Login = () => {
   const navigation = useNavigation<any>();
+  const dispatch = useDispatch();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [secureText, setSecureText] = useState(true);
+
+  const { isReqLoading } = useSelector((state: any) => state.AuthReducer);
+
+  const handleLogin = () => {
+    if (!email.trim()) {
+      ToastAlert('Please enter your email or username');
+      return;
+    }
+    if (!password.trim()) {
+      ToastAlert('Please enter your password');
+      return;
+    }
+    dispatch(loginRequest({ email: email.trim(), password: password.trim() }));
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -51,6 +70,7 @@ const Login = () => {
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
+              editable={!isReqLoading}
             />
 
             <View style={styles.passwordContainer}>
@@ -62,11 +82,13 @@ const Login = () => {
                 onChangeText={setPassword}
                 secureTextEntry={secureText}
                 autoCapitalize="none"
+                editable={!isReqLoading}
               />
               <TouchableOpacity
                 style={styles.eyeButton}
                 onPress={() => setSecureText(!secureText)}
                 activeOpacity={0.7}
+                disabled={isReqLoading}
               >
 
                 {/* <Text style={styles.eyeText}>{secureText ? '👁️' : '👁️‍🗨️'}</Text> */}
@@ -74,16 +96,26 @@ const Login = () => {
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.forgotButton} activeOpacity={0.7}>
+            <TouchableOpacity
+              style={styles.forgotButton}
+              activeOpacity={0.7}
+              disabled={isReqLoading}
+              onPress={() => navigation.navigate('ForgotPassword')}
+            >
               <Text style={styles.forgotText}>Forget password?</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.primaryButton}
-              onPress={() => navigation.replace('BottomTab')}
+              onPress={handleLogin}
               activeOpacity={0.8}
+              disabled={isReqLoading}
             >
-              <Text style={styles.primaryButtonText}>Log In</Text>
+              {isReqLoading ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.primaryButtonText}>Log In</Text>
+              )}
             </TouchableOpacity>
           </View>
 

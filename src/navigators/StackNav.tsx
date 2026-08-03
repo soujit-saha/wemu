@@ -16,6 +16,9 @@ import Onboarding from '../screens/auth/Onboarding';
 import Signup from '../screens/auth/Signup';
 import Login from '../screens/auth/Login';
 import Otp from '../screens/auth/Otp';
+import ForgotPassword from '../screens/auth/ForgotPassword';
+import OtpVerify from '../screens/auth/OtpVerify';
+import ResetPassword from '../screens/auth/ResetPassword';
 import MusicPlay from '../screens/main/MusicPlay';
 import Share from '../screens/main/Share';
 import Notification from '../screens/main/Notification';
@@ -24,6 +27,7 @@ import Downloads from '../screens/main/Downloads';
 import Album from '../screens/main/Album';
 import PlayList from '../screens/main/PlayList';
 import CreatePlayList from '../screens/main/CreatePlayList';
+import EditProfile from '../screens/main/EditProfile';
 
 type RootStackParamList = {
   SplashScreen: undefined;
@@ -31,6 +35,9 @@ type RootStackParamList = {
   Signup: undefined;
   Login: undefined;
   Otp: undefined;
+  ForgotPassword: undefined;
+  OtpVerify: { email: string };
+  ResetPassword: { email: string; code: string };
   BottomTab: undefined;
   MusicPlay: undefined;
   Share: undefined;
@@ -40,6 +47,7 @@ type RootStackParamList = {
   Album: undefined;
   PlayList: undefined;
   CreatePlayList: undefined;
+  EditProfile: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -68,78 +76,81 @@ const smoothTransition = {
 };
 
 export default function StackNav() {
-  // const { getTokenResponse, isLoading } = useSelector(
-  //   (state: any) => state.AuthReducer,
-  // );
+  const { getTokenResponse, isLoading, hasSeenOnboarding } = useSelector(
+    (state: any) => state.AuthReducer,
+  );
 
   // console.log("getTokenResponse", getTokenResponse);
   const Screens: Partial<{
     [key in keyof RootStackParamList]: React.ComponentType<any>;
   }> =
-  // getTokenResponse == null ?
-  {
-    SplashScreen,
-    Onboarding,
-    Login,
-    Signup,
-    Otp,
-    BottomTab,
-    MusicPlay,
-    Share,
-    Notification,
-    Offline,
-    Downloads,
-    Album,
-    PlayList,
-    CreatePlayList,
-  };
-  //     :
-  //     {
-  //       BottomTab,
-  //       Profile,
-  //       Notifications,
-  //       ScheduleCalendar,
-  //       ToolCategories,
-  //       AddNewTool,
-  //       Teams,
-  //       TeamsDetails
-  //     };
+    getTokenResponse == null ?
+      (hasSeenOnboarding ?
+        {
+          Login,
+          Signup,
+          Otp,
+          ForgotPassword,
+          OtpVerify,
+          ResetPassword,
+        } : {
+          Onboarding,
+          Login,
+          Signup,
+          Otp,
+          ForgotPassword,
+          OtpVerify,
+          ResetPassword,
+        }
+      ) : {
+        BottomTab,
+        MusicPlay,
+        Share,
+        Notification,
+        Offline,
+        Downloads,
+        Album,
+        PlayList,
+        CreatePlayList,
+        EditProfile,
+      };
 
-  // if (isLoading) {
-  //   return <SplashScreen />;
-  // } else {
-  return (
-    <NavigationContainer ref={navigationRef}>
-      <Stack.Navigator
-        screenOptions={{
-          headerShown: false,
-          ...smoothTransition,
-        }}
-      >
-        {Object.entries({
-          ...Screens,
-        }).map(([name, component], index) => {
-          const isMusicPlay = name === 'MusicPlay';
-          return (
-            <Stack.Screen
-              key={index}
-              name={name as keyof RootStackParamList}
-              component={component}
-              options={{
-                ...(isMusicPlay
-                  ? {
+
+  if (isLoading) {
+    return <SplashScreen />;
+  } else {
+    return (
+      <NavigationContainer ref={navigationRef}>
+        <Stack.Navigator
+          screenOptions={{
+            headerShown: false,
+            ...smoothTransition,
+          }}
+        >
+          {Object.entries({
+            ...Screens,
+          }).map(([name, component], index) => {
+            const isMusicPlay = name === 'MusicPlay';
+            return (
+              <Stack.Screen
+                key={index}
+                name={name as keyof RootStackParamList}
+                component={component}
+                options={{
+                  ...(isMusicPlay
+                    ? {
                       gestureDirection: 'vertical' as const,
                       cardStyleInterpolator: CardStyleInterpolators.forVerticalIOS,
                     }
-                  : smoothTransition),
-                // gestureEnabled: true,
-                gestureResponseDistance: 50, // Increase swipe sensitivity
-              }}
-            />
-          );
-        })}
-      </Stack.Navigator>
-    </NavigationContainer>
-  );
+                    : smoothTransition),
+                  // gestureEnabled: true,
+                  gestureResponseDistance: 50, // Increase swipe sensitivity
+                }}
+              />
+            );
+          })}
+        </Stack.Navigator>
+      </NavigationContainer>
+    );
+  }
 }
-// }

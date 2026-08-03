@@ -13,6 +13,7 @@ export interface AuthState {
   ResetPasswordRes?: {};
   ForgotPasswordRes?: {};
   deleteAccountRes?: {};
+  hasSeenOnboarding: boolean;
 }
 
 const initialState: AuthState = {
@@ -27,6 +28,7 @@ const initialState: AuthState = {
   ResetPasswordRes: {},
   ForgotPasswordRes: {},
   deleteAccountRes: {},
+  hasSeenOnboarding: false,
 };
 
 const AuthSlice = createSlice({
@@ -160,6 +162,10 @@ const AuthSlice = createSlice({
       state.error = action.payload?.error || 'Delete account failed';
       state.status = action.type;
     },
+
+    setOnboardingSeen(state, action: PayloadAction<boolean>) {
+      state.hasSeenOnboarding = action.payload;
+    },
   },
 });
 
@@ -195,6 +201,8 @@ export const {
   deleteAccountRequest,
   deleteAccountSuccess,
   deleteAccountFailure,
+
+  setOnboardingSeen,
 } = AuthSlice.actions;
 
 export default AuthSlice.reducer;

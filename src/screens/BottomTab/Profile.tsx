@@ -7,13 +7,35 @@ import {
   TouchableOpacity,
   StatusBar,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
+import { useDispatch, useSelector } from 'react-redux';
 import { COLORS, FONTS } from '../../utils/constants';
 import { ms } from '../../utils/helper/metric';
+import { logoutRequest } from '../../redux/reducer/AuthReducer';
+import { myProfileRequest } from '../../redux/reducer/MainReducer';
 
 const Profile = () => {
+  const dispatch = useDispatch();
+  const navigation = useNavigation<any>();
+  const { isReqLoading } = useSelector((state: any) => state.AuthReducer);
+  const { myProfileRes } = useSelector((state: any) => state.MainReducer);
+
+  React.useEffect(() => {
+    dispatch(myProfileRequest({}));
+  }, [dispatch]);
+
+  const displayName = myProfileRes?.name || myProfileRes?.data?.name || '';
+  const displayEmail = myProfileRes?.email || myProfileRes?.data?.email || '';
+  const displayAvatar = myProfileRes?.avatar || myProfileRes?.data?.avatar || myProfileRes?.image || myProfileRes?.data?.image || 'https://randomuser.me/api/portraits/men/32.jpg';
+
+  const handleLogout = () => {
+    dispatch(logoutRequest({ showMsg: true }));
+  };
+
   // Vector Drawing for Edit Profile Icon (User)
   const UserIcon = ({ color }: { color: string }) => (
     <View style={styles.userIconContainer}>
@@ -71,13 +93,13 @@ const Profile = () => {
           >
             <View style={styles.avatarImageWrapper}>
               <Image
-                source={{ uri: 'https://randomuser.me/api/portraits/men/32.jpg' }}
+                source={{ uri: displayAvatar }}
                 style={styles.avatarImage}
               />
             </View>
           </LinearGradient>
-          <Text style={styles.profileName}>Alex</Text>
-          <Text style={styles.profileHandle}>@alex_vibe</Text>
+          <Text style={styles.profileName}>{displayName}</Text>
+          {displayEmail ? <Text style={styles.profileHandle}>{displayEmail}</Text> : null}
         </View>
 
         {/* Stats Row */}
@@ -101,7 +123,11 @@ const Profile = () => {
         {/* Options List */}
         <View style={styles.optionsList}>
           {/* Edit Profile */}
-          <TouchableOpacity style={styles.optionItem} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.optionItem}
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate('EditProfile')}
+          >
             <View style={styles.optionLeft}>
               <View style={[styles.iconBadge, { backgroundColor: 'rgba(99, 55, 235, 0.08)' }]}>
                 <UserIcon color={COLORS.Primary || '#6337EB'} />
@@ -146,8 +172,17 @@ const Profile = () => {
         </View>
 
         {/* Log Out Button */}
-        <TouchableOpacity style={styles.logoutButton} activeOpacity={0.75}>
-          <Text style={styles.logoutButtonText}>Log Out</Text>
+        <TouchableOpacity
+          style={styles.logoutButton}
+          activeOpacity={0.75}
+          onPress={handleLogout}
+          disabled={isReqLoading}
+        >
+          {isReqLoading ? (
+            <ActivityIndicator size="small" color="#EF4444" />
+          ) : (
+            <Text style={styles.logoutButtonText}>Log Out</Text>
+          )}
         </TouchableOpacity>
 
         <View style={{ height: ms(120) }} />

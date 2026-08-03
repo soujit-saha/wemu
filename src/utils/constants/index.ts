@@ -7,7 +7,7 @@ interface AppConstants {
 
 export const constants: AppConstants = {
   TOKEN: 'TOKEN',
-  BASE_URL: 'https://tool.swastechinfo.in/public/api',
+  BASE_URL: "https://wemu.swastechinfoinnovations.in/web/public/api"
 } as const;
 
 // Colors extracted from Figma design
