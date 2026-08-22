@@ -7,6 +7,7 @@ export interface SubscriptionState {
   purchaseSubscriptionRes?: any;
   myCurrentSubscriptionRes?: any;
   subscriptionsRes?: any;
+  sectionDetailsRes?: any;
 }
 
 const initialState: SubscriptionState = {
@@ -15,6 +16,7 @@ const initialState: SubscriptionState = {
   purchaseSubscriptionRes: {},
   myCurrentSubscriptionRes: {},
   subscriptionsRes: [],
+  sectionDetailsRes: {},
 };
 
 const SubscriptionSlice = createSlice({
@@ -65,6 +67,21 @@ const SubscriptionSlice = createSlice({
       state.error = action.payload?.error || 'subscriptions failed';
       state.status = action.type;
     },
+
+    getSectionDetailsRequest(state, action: PayloadAction<any>) {
+      state.isLoading = true;
+      state.status = action.type;
+    },
+    getSectionDetailsSuccess(state, action: PayloadAction<any>) {
+      state.isLoading = false;
+      state.sectionDetailsRes = action.payload;
+      state.status = action.type;
+    },
+    getSectionDetailsFailure(state, action: PayloadAction<any>) {
+      state.isLoading = false;
+      state.error = action.payload?.error || 'get section details failed';
+      state.status = action.type;
+    },
   },
 });
 
@@ -78,6 +95,9 @@ export const {
   subscriptionsRequest,
   subscriptionsSuccess,
   subscriptionsFailure,
+  getSectionDetailsRequest,
+  getSectionDetailsSuccess,
+  getSectionDetailsFailure,
 } = SubscriptionSlice.actions;
 
 export default SubscriptionSlice.reducer;

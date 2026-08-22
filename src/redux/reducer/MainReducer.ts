@@ -35,6 +35,7 @@ export interface MainState {
   getCmsRes?: any;
   respondToolStatusCheckRes?: any;
   myProfileRes?: any;
+  artistDetailsRes?: any;
 }
 
 const initialState: MainState = {
@@ -45,6 +46,7 @@ const initialState: MainState = {
   getProfileRes: {},
   myProfileRes: {},
   getDashboardRes: {},
+  artistDetailsRes: {},
 };
 
 const MainSlice = createSlice({
@@ -118,6 +120,21 @@ const MainSlice = createSlice({
       state.error = action.payload?.error || 'getDashboard failed';
       state.status = action.type;
     },
+
+    getArtistDetailsRequest(state, action: PayloadAction<any>) {
+      state.isMainLoading = true;
+      state.status = action.type;
+    },
+    getArtistDetailsSuccess(state, action: PayloadAction<any>) {
+      state.isMainLoading = false;
+      state.artistDetailsRes = action.payload;
+      state.status = action.type;
+    },
+    getArtistDetailsFailure(state, action: PayloadAction<any>) {
+      state.isMainLoading = false;
+      state.error = action.payload?.error || 'getArtistDetails failed';
+      state.status = action.type;
+    },
   },
 });
 
@@ -137,6 +154,10 @@ export const {
   getDashboardRequest,
   getDashboardSuccess,
   getDashboardFailure,
+
+  getArtistDetailsRequest,
+  getArtistDetailsSuccess,
+  getArtistDetailsFailure,
 } = MainSlice.actions;
 
 export default MainSlice.reducer;

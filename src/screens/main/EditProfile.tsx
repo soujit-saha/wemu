@@ -54,7 +54,7 @@ const EditProfile = () => {
       setEmail(data.email || '');
       setPhoneCode(String(data.phone_code || data.country_code || '91'));
       setMobileNumber(String(data.mobile_number || data.mobile || ''));
-      setAvatarUri(data.avatar || data.image || '');
+      setAvatarUri(data.profile_image || '');
     }
   }, [myProfileRes]);
 
@@ -108,11 +108,11 @@ const EditProfile = () => {
     const formData = new FormData();
     formData.append('name', fullName.trim());
     formData.append('email', email.trim());
-    formData.append('phone_code', phoneCode.trim().replace('+', ''));
+    // formData.append('phone_code', phoneCode.trim().replace('+', ''));
     formData.append('mobile_number', mobileNumber.trim());
 
     if (selectedImage) {
-      formData.append('image', {
+      formData.append('profile_image', {
         uri: Platform.OS === 'android' ? selectedImage.uri : selectedImage.uri.replace('file://', ''),
         type: selectedImage.type || 'image/jpeg',
         name: selectedImage.fileName || 'profile_image.jpg',
@@ -153,7 +153,7 @@ const EditProfile = () => {
     </View>
   );
 
-  const displayAvatar = avatarUri || 'https://randomuser.me/api/portraits/men/32.jpg';
+  const displayAvatar = avatarUri || '';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -190,7 +190,7 @@ const EditProfile = () => {
                 end={{ x: 1, y: 1 }}
               >
                 <View style={styles.avatarImageWrapper}>
-                  <Image source={{ uri: displayAvatar }} style={styles.avatarImage} />
+                  <Image source={displayAvatar ? { uri: displayAvatar } : ICONS.people} style={displayAvatar ? styles.avatarImage : [styles.avatarImage, { tintColor: COLORS.Primary }]} />
                 </View>
               </LinearGradient>
               <View style={styles.cameraBadge}>
@@ -260,7 +260,7 @@ const EditProfile = () => {
             <Text style={styles.inputLabel}>Mobile Number</Text>
             <View style={styles.phoneInputRow}>
               {/* Phone Code Input wrapper */}
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 style={[
                   styles.phoneCodeWrapper,
                   focusedField === 'phoneCode' && styles.inputWrapperFocused,
@@ -282,7 +282,7 @@ const EditProfile = () => {
                   onBlur={() => setFocusedField(null)}
                   editable={!isMainLoading}
                 />
-              </TouchableOpacity>
+              </TouchableOpacity> */}
 
               {/* Main Mobile Input wrapper */}
               <TouchableOpacity

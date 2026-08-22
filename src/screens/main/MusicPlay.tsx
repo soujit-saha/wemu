@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View, Image, StatusBar, TouchableOpacity, Dimensions, ScrollView } from 'react-native';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -17,7 +17,10 @@ const MusicPlay = () => {
 
     const artistName = track?.featured_artists
         ? [track.featured_artists, track.other_artists].filter(Boolean).join(', ')
-        : track?.subtitle || track?.artist || 'The Weeknd';
+        : track?.subtitle ||
+          (track?.artist && typeof track.artist === 'object' ? track.artist.name : track?.artist) ||
+          track?.other_artists ||
+          'The Weeknd';
 
     const albumArt = track?.cover_image_path || track?.image || track?.artwork || 'https://picsum.photos/400/400?random=109';
 
@@ -47,7 +50,26 @@ const MusicPlay = () => {
     // Track Player hooks for real progress and state
     const playbackState = usePlaybackState();
     const stateVal = typeof playbackState === 'object' && playbackState !== null ? (playbackState as any).state : playbackState;
-    const isPlaying = stateVal === State.Playing || stateVal === 'playing' || stateVal === 'buffering' || stateVal === State.Buffering;
+    const [isTransitioning, setIsTransitioning] = useState(false);
+    const transitionTimeoutRef = useRef<any>(null);
+    const isPlaying = stateVal === State.Playing || stateVal === 'playing' || stateVal === 'buffering' || stateVal === State.Buffering || isTransitioning;
+
+    useEffect(() => {
+        if (stateVal === State.Playing || stateVal === 'playing' || stateVal === 'buffering' || stateVal === State.Buffering) {
+            setIsTransitioning(false);
+            if (transitionTimeoutRef.current) {
+                clearTimeout(transitionTimeoutRef.current);
+            }
+        }
+    }, [stateVal]);
+
+    useEffect(() => {
+        return () => {
+            if (transitionTimeoutRef.current) {
+                clearTimeout(transitionTimeoutRef.current);
+            }
+        };
+    }, []);
 
     const progressData = useProgress();
     const progress = progressData.position;
@@ -157,10 +179,20 @@ const MusicPlay = () => {
                 if (currentTrackIndex !== null && currentTrackIndex !== undefined) {
                     const currentActiveTrack = await TrackPlayer.getTrack(currentTrackIndex);
                     if (currentActiveTrack && currentActiveTrack.id === track?.id?.toString()) {
-                        // Same track is already loaded/playing, do not reload
+                        // Same track is already loaded, do not reload.
+                        // Ensure it plays.
+                        await TrackPlayer.play();
                         return;
                     }
                 }
+
+                setIsTransitioning(true);
+                if (transitionTimeoutRef.current) {
+                    clearTimeout(transitionTimeoutRef.current);
+                }
+                transitionTimeoutRef.current = setTimeout(() => {
+                    setIsTransitioning(false);
+                }, 5000); // 5-second safety timeout fallback
 
                 await TrackPlayer.reset();
                 const audioUrl = track?.audio_file_path || track?.url || 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
@@ -175,6 +207,10 @@ const MusicPlay = () => {
                 setShowLyrics(false);
             } catch (error) {
                 console.error("Error loading track in TrackPlayer", error);
+                setIsTransitioning(false);
+                if (transitionTimeoutRef.current) {
+                    clearTimeout(transitionTimeoutRef.current);
+                }
             }
         };
 
@@ -182,6 +218,11 @@ const MusicPlay = () => {
     }, [isPlayerReady, track]);
 
     const togglePlayback = async () => {
+        if (transitionTimeoutRef.current) {
+            clearTimeout(transitionTimeoutRef.current);
+        }
+        setIsTransitioning(false);
+
         if (isPlaying) {
             await TrackPlayer.pause();
         } else {
@@ -467,7 +508,7 @@ const MusicPlay = () => {
                 <View style={styles.artistCard}>
                     <View style={styles.artistImageContainer}>
                         <Image
-                            source={{ uri: 'https://picsum.photos/400/400?random=artist' }}
+                            source={{ uri: track?.artist?.cover_image_path || track?.artist?.image_path || 'https://picsum.photos/400/400?random=artist' }}
                             style={styles.artistCardImage}
                         />
                         <Text style={styles.artistCardBadge}>About the artist</Text>
@@ -475,7 +516,7 @@ const MusicPlay = () => {
                     <View style={styles.artistCardInfo}>
                         <View style={styles.artistNameRow}>
                             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <Text style={styles.artistCardName}>Akhil Sachdeva</Text>
+                                <Text style={styles.artistCardName}>{track?.artist?.name || artistName}</Text>
                                 <View style={styles.verifiedBadge}>
                                     <Text style={styles.verifiedBadgeText}>✓</Text>
                                 </View>
@@ -484,9 +525,13 @@ const MusicPlay = () => {
                                 <Text style={styles.followButtonText}>Follow</Text>
                             </TouchableOpacity>
                         </View>
-                        <Text style={styles.monthlyListeners}>1.3Cr monthly listeners</Text>
+                        <Text style={styles.monthlyListeners}>
+                            {track?.artist?.total_followers !== undefined 
+                                ? `${track.artist.total_followers} followers` 
+                                : '0 followers'}
+                        </Text>
                         <Text style={styles.artistBio} numberOfLines={3}>
-                            Akhil Sachdeva is an Indian musician, singer and composer. His song Humsafar was featured in the Bollywood film Badrinath Ki Dulhania.... <Text style={styles.seeMoreText}>see more</Text>
+                            {track?.artist?.bio || "No biography available for this artist."}
                         </Text>
                     </View>
                 </View>

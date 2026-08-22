@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useDispatch, useSelector } from 'react-redux';
-import { COLORS, FONTS } from '../../utils/constants';
+import { COLORS, FONTS, ICONS } from '../../utils/constants';
 import { ms } from '../../utils/helper/metric';
 import { logoutRequest } from '../../redux/reducer/AuthReducer';
 import { myProfileRequest } from '../../redux/reducer/MainReducer';
@@ -28,9 +28,10 @@ const Profile = () => {
     dispatch(myProfileRequest({}));
   }, [dispatch]);
 
-  const displayName = myProfileRes?.name || myProfileRes?.data?.name || '';
-  const displayEmail = myProfileRes?.email || myProfileRes?.data?.email || '';
-  const displayAvatar = myProfileRes?.avatar || myProfileRes?.data?.avatar || myProfileRes?.image || myProfileRes?.data?.image || 'https://randomuser.me/api/portraits/men/32.jpg';
+  const displayName = myProfileRes?.data?.name || '';
+  const displayEmail = myProfileRes?.data?.email || '';
+  const displayAvatar = myProfileRes?.data?.profile_image || "";
+  // 'https://randomuser.me/api/portraits/men/32.jpg';
 
   const handleLogout = () => {
     dispatch(logoutRequest({ showMsg: true }));
@@ -93,8 +94,8 @@ const Profile = () => {
           >
             <View style={styles.avatarImageWrapper}>
               <Image
-                source={{ uri: displayAvatar }}
-                style={styles.avatarImage}
+                source={displayAvatar ? { uri: displayAvatar } : ICONS.people}
+                style={displayAvatar ? styles.avatarImage : [styles.avatarImage, { tintColor: COLORS.Primary }]}
               />
             </View>
           </LinearGradient>
@@ -105,17 +106,17 @@ const Profile = () => {
         {/* Stats Row */}
         <View style={styles.statsRow}>
           <View style={styles.statColumn}>
-            <Text style={styles.statNumber}>12</Text>
+            <Text style={styles.statNumber}>0</Text>
             <Text style={styles.statLabel}>Playlists</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statColumn}>
-            <Text style={styles.statNumber}>120</Text>
+            <Text style={styles.statNumber}>0</Text>
             <Text style={styles.statLabel}>Following</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statColumn}>
-            <Text style={styles.statNumber}>540</Text>
+            <Text style={styles.statNumber}>0</Text>
             <Text style={styles.statLabel}>Followers</Text>
           </View>
         </View>

@@ -64,7 +64,7 @@ const Login = () => {
           <View style={styles.formContainer}>
             <TextInput
               style={styles.input}
-              placeholder="Email or username"
+              placeholder="Email"
               placeholderTextColor="#9CA3AF"
               value={email}
               onChangeText={setEmail}

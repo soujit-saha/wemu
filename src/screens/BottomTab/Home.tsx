@@ -113,7 +113,13 @@ const Home = () => {
     }
   };
 
-  const renderSectionHeader = (title: string, artistHeader: boolean = false) => {
+  const renderSectionHeader = (
+    title: string,
+    isSeeAll: boolean = false,
+    typeId?: string,
+    type?: string,
+    artistHeader: boolean = false,
+  ) => {
     if (artistHeader) {
       return (
         <View style={styles.artistHeaderRow}>
@@ -128,6 +134,21 @@ const Home = () => {
         </View>
       );
     }
+
+    if (isSeeAll && typeId) {
+      return (
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionHeaderTitle}>{title}</Text>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('SeeAll', { type_id: typeId, title, type })}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.seeAllText}>See all</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
     return <Text style={styles.sectionTitle}>{title}</Text>;
   };
 
@@ -249,8 +270,10 @@ const Home = () => {
             if (type === 'artist') {
               return (
                 <React.Fragment key={title || sectionIdx}>
-                  {renderSectionHeader(title)}
-                  {renderCircleList(mappedItems)}
+                  {renderSectionHeader(title, section.is_seeall, section.type_id, type)}
+                  {renderCircleList(mappedItems, (item) =>
+                    navigation.navigate('ArtistsDetails', { artist: item })
+                  )}
                 </React.Fragment>
               );
             }
@@ -259,7 +282,7 @@ const Home = () => {
             if (type === 'radio') {
               return (
                 <React.Fragment key={title || sectionIdx}>
-                  {renderSectionHeader(title)}
+                  {renderSectionHeader(title, section.is_seeall, section.type_id, type)}
                   {renderCircleList(mappedItems)}
                 </React.Fragment>
               );
@@ -273,7 +296,7 @@ const Home = () => {
               }));
               return (
                 <React.Fragment key={title || sectionIdx}>
-                  {renderSectionHeader(title)}
+                  {renderSectionHeader(title, section.is_seeall, section.type_id, type)}
                   {renderChartsList(blockItemsWithColors)}
                 </React.Fragment>
               );
@@ -283,7 +306,7 @@ const Home = () => {
             if (type === 'song' && (title === 'New Release' || title.toLowerCase().includes('new'))) {
               return (
                 <React.Fragment key={title || sectionIdx}>
-                  {renderSectionHeader(title)}
+                  {renderSectionHeader(title, section.is_seeall, section.type_id, type)}
                   <View style={styles.verticalTracksContainer}>
                     {mappedItems.map((track: any) => (
                       <TouchableOpacity
@@ -301,9 +324,9 @@ const Home = () => {
                             {track.subtitle}
                           </Text>
                         </View>
-                        <TouchableOpacity style={styles.moreButton} activeOpacity={0.7}>
+                        {/* <TouchableOpacity style={styles.moreButton} activeOpacity={0.7}>
                           <Text style={styles.moreButtonText}>⋮</Text>
-                        </TouchableOpacity>
+                        </TouchableOpacity> */}
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -315,7 +338,7 @@ const Home = () => {
             const isPlaylist = type === 'playlist';
             return (
               <React.Fragment key={title || sectionIdx}>
-                {renderSectionHeader(title)}
+                {renderSectionHeader(title, section.is_seeall, section.type_id, type)}
                 {renderSquareList(
                   mappedItems,
                   isPlaylist,
@@ -637,6 +660,25 @@ const styles = StyleSheet.create({
     height: '100%',
     width: '45%',
     backgroundColor: '#6337EB',
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: ms(16),
+    marginBottom: ms(12),
+  },
+  sectionHeaderTitle: {
+    fontFamily: FONTS.bold28,
+    fontSize: ms(20),
+    color: '#111827',
+    includeFontPadding: false,
+  },
+  seeAllText: {
+    fontFamily: FONTS.medium24,
+    fontSize: ms(14),
+    color: COLORS.Primary || '#6337EB',
+    includeFontPadding: false,
   },
 });
 

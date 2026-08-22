@@ -28,6 +28,8 @@ import Album from '../screens/main/Album';
 import PlayList from '../screens/main/PlayList';
 import CreatePlayList from '../screens/main/CreatePlayList';
 import EditProfile from '../screens/main/EditProfile';
+import SeeAll from '../screens/main/SeeAll';
+import ArtistsDetails from '../screens/main/ArtistsDetails';
 
 type RootStackParamList = {
   SplashScreen: undefined;
@@ -48,6 +50,8 @@ type RootStackParamList = {
   PlayList: undefined;
   CreatePlayList: undefined;
   EditProfile: undefined;
+  SeeAll: { type_id: string; title: string };
+  ArtistsDetails: { artist: any };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -113,6 +117,8 @@ export default function StackNav() {
         PlayList,
         CreatePlayList,
         EditProfile,
+        SeeAll,
+        ArtistsDetails,
       };
 
 

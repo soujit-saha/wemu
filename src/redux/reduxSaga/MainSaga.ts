@@ -13,6 +13,9 @@ import {
   updateProfileFailure,
   getDashboardSuccess,
   getDashboardFailure,
+  getArtistDetailsRequest,
+  getArtistDetailsSuccess,
+  getArtistDetailsFailure,
 } from '../reducer/MainReducer';
 // import { getApi, postApi } from '../../utils/helper/ApiRequest';
 import { ApiHeaders, ApiResponse } from '../types';
@@ -127,10 +130,30 @@ export function* updateProfileSaga(
   }
 }
 
+export function* getArtistDetailsSaga(
+  action: PayloadAction<any>,
+): Generator<any, void, any> {
+  const item = yield select(getItems);
+  const header: ApiHeaders = {
+    Accept: 'application/json',
+    contenttype: 'application/json',
+    accesstoken: item.getTokenResponse,
+  };
+  try {
+    const artistId = action.payload?.id ?? action.payload ?? 1;
+    const response: ApiResponse = yield call(getApi, `artist/details/${artistId}`, header);
+    yield put(getArtistDetailsSuccess(response?.data));
+  } catch (error: any) {
+    yield put(getArtistDetailsFailure(error));
+    ToastAlert(error?.response?.data?.message || 'getArtistDetails Failed');
+  }
+}
+
 // Watcher Saga
 export function* watchMainSaga(): Generator<any, void, any> {
   yield takeLatest('Main/myProfileRequest', myProfileSaga);
   yield takeLatest('Main/peopleListRequest', peopleListSaga);
   yield takeLatest('Main/updateProfileRequest', updateProfileSaga);
   yield takeLatest('Main/getDashboardRequest', getDashboardSaga);
+  yield takeLatest('Main/getArtistDetailsRequest', getArtistDetailsSaga);
 }

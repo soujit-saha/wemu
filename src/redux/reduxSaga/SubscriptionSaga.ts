@@ -9,6 +9,8 @@ import {
   purchaseSubscriptionSuccess,
   subscriptionsFailure,
   subscriptionsSuccess,
+  getSectionDetailsSuccess,
+  getSectionDetailsFailure,
 } from '../reducer/SubscriptionReducer';
 import { getApi, postApi } from '../../utils/helper/ApiRequest';
 
@@ -87,6 +89,35 @@ export function* subscriptionsSaga(): Generator<any, void, any> {
   }
 }
 
+export function* getSectionDetailsSaga(
+  action: PayloadAction<any>,
+): Generator<any, void, any> {
+  const item = yield select(getItems);
+  const header: ApiHeaders = {
+    Accept: 'application/json',
+    contenttype: 'application/json',
+    accesstoken: item.getTokenResponse,
+  };
+
+  try {
+    const type_id = action.payload?.type_id || '';
+    const response: ApiResponse = yield call(
+      getApi,
+      `dashboard/section-details?type_id=${type_id}`,
+      header,
+    );
+
+    yield put(getSectionDetailsSuccess(response?.data?.data?.result
+    ));
+    console.log('112', response?.data?.data?.result)
+  } catch (error: any) {
+    yield put(getSectionDetailsFailure(error));
+    ToastAlert(
+      error?.response?.data?.message || 'Get section details failed',
+    );
+  }
+}
+
 export function* watchSubscriptionSaga(): Generator<any, void, any> {
   yield takeLatest(
     'Subscription/purchaseSubscriptionRequest',
@@ -97,4 +128,5 @@ export function* watchSubscriptionSaga(): Generator<any, void, any> {
     myCurrentSubscriptionSaga,
   );
   yield takeLatest('Subscription/subscriptionsRequest', subscriptionsSaga);
+  yield takeLatest('Subscription/getSectionDetailsRequest', getSectionDetailsSaga);
 }

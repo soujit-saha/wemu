@@ -8,10 +8,11 @@ import {
   StatusBar,
   Modal,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
-import { CardField, useStripe } from '@stripe/stripe-react-native';
+import { CardField, CardForm, useStripe } from '@stripe/stripe-react-native';
 import { COLORS, FONTS } from '../../utils/constants';
 import { ms } from '../../utils/helper/metric';
 import {
@@ -341,17 +342,18 @@ const Premium = () => {
               </Text>
             )}
 
-            {/* <CardField
+            <CardField
               postalCodeEnabled={false}
-              placeholder={{
+              placeholders={{
                 number: 'Card Number',
               }}
               cardStyle={{
                 backgroundColor: '#FFFFFF',
                 textColor: '#000000',
+                placeholderColor: '#9CA3AF',
               }}
               style={styles.cardField}
-            /> */}
+            />
 
             <TouchableOpacity
               style={[styles.modalPayButton, isPaying && styles.modalButtonDisabled]}
@@ -674,12 +676,13 @@ const styles = StyleSheet.create({
     marginBottom: ms(24),
   },
   cardField: {
-    width: '100%',
+    width: Dimensions.get('window').width - ms(88),
     height: ms(50),
     marginVertical: ms(10),
     borderColor: '#D1D5DB',
     borderWidth: 1,
     borderRadius: ms(8),
+    backgroundColor: '#FFFFFF',
   },
   modalPayButton: {
     width: '100%',
