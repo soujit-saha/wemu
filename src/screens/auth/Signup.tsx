@@ -11,6 +11,8 @@ import {
   ScrollView,
   ActivityIndicator,
   Image,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,6 +21,7 @@ import { COLORS, FONTS, ICONS } from '../../utils/constants';
 import { ms } from '../../utils/helper/metric';
 import { signupRequest } from '../../redux/reducer/AuthReducer';
 import ToastAlert from '../../utils/helper/Toast';
+import { useTranslation } from '../../utils/hooks/useTranslation';
 
 const Signup = () => {
   const navigation = useNavigation<any>();
@@ -32,46 +35,53 @@ const Signup = () => {
   const [secureText, setSecureText] = useState(true);
   const [secureConfirmText, setSecureConfirmText] = useState(true);
   const [agree, setAgree] = useState(false);
+  const [showLangModal, setShowLangModal] = useState(false);
+  const { t, lang, changeLanguage } = useTranslation();
 
   const { isReqLoading } = useSelector((state: any) => state.AuthReducer);
 
+  const selectLanguage = (selectedLang: 'en' | 'es') => {
+    changeLanguage(selectedLang);
+    setShowLangModal(false);
+  };
+
   const handleSignup = () => {
     if (!fullName.trim()) {
-      ToastAlert('Please enter your full name');
+      ToastAlert(t('pleaseEnterFullName'));
       return;
     }
     if (!email.trim()) {
-      ToastAlert('Please enter your email');
+      ToastAlert(t('pleaseEnterEmail'));
       return;
     }
     // Simple email regex validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
-      ToastAlert('Please enter a valid email address');
+      ToastAlert(t('pleaseEnterEmailValid'));
       return;
     }
     if (!phoneCode.trim() || isNaN(Number(phoneCode))) {
-      ToastAlert('Please enter a valid phone code');
+      ToastAlert(t('pleaseEnterPhoneCodeValid'));
       return;
     }
     if (!mobileNumber.trim() || isNaN(Number(mobileNumber))) {
-      ToastAlert('Please enter a valid mobile number');
+      ToastAlert(t('pleaseEnterMobileNumberValid'));
       return;
     }
     if (!password.trim()) {
-      ToastAlert('Please enter a password');
+      ToastAlert(t('pleaseEnterPassword'));
       return;
     }
     if (password.trim().length < 6) {
-      ToastAlert('Password must be at least 6 characters long');
+      ToastAlert(t('passwordMinLength'));
       return;
     }
     if (password.trim() !== confirmPassword.trim()) {
-      ToastAlert('Passwords do not match');
+      ToastAlert(t('passwordsDoNotMatch'));
       return;
     }
     if (!agree) {
-      ToastAlert('Please agree to the Terms of Use and Privacy Policy');
+      ToastAlert(t('pleaseAgreeTerms'));
       return;
     }
 
@@ -98,19 +108,19 @@ const Signup = () => {
           {/* Top Bar */}
           <View style={styles.topBar}>
             <View />
-            <TouchableOpacity style={styles.langButton} activeOpacity={0.7} disabled={isReqLoading}>
-              <Text style={styles.langText}>EN ▾</Text>
+            <TouchableOpacity style={styles.langButton} onPress={() => setShowLangModal(true)} activeOpacity={0.7} disabled={isReqLoading}>
+              <Text style={styles.langText}>{lang === 'en' ? 'EN ▾' : 'ES ▾'}</Text>
             </TouchableOpacity>
           </View>
 
           {/* Title */}
-          <Text style={styles.title}>Create Account</Text>
+          <Text style={styles.title}>{t('createAccount')}</Text>
 
           {/* Form */}
           <View style={styles.formContainer}>
             <TextInput
               style={styles.input}
-              placeholder="Full name"
+              placeholder={t('fullName')}
               placeholderTextColor="#9CA3AF"
               value={fullName}
               onChangeText={setFullName}
@@ -119,7 +129,7 @@ const Signup = () => {
 
             <TextInput
               style={styles.input}
-              placeholder="Email"
+              placeholder={t('email')}
               placeholderTextColor="#9CA3AF"
               value={email}
               onChangeText={setEmail}
@@ -145,7 +155,7 @@ const Signup = () => {
               </View>
               <TextInput
                 style={styles.mobileInput}
-                placeholder="Mobile number"
+                placeholder={t('mobileNumber')}
                 placeholderTextColor="#9CA3AF"
                 value={mobileNumber}
                 onChangeText={setMobileNumber}
@@ -158,7 +168,7 @@ const Signup = () => {
             <View style={styles.passwordContainer}>
               <TextInput
                 style={styles.passwordInput}
-                placeholder="Password"
+                placeholder={t('password')}
                 placeholderTextColor="#9CA3AF"
                 value={password}
                 onChangeText={setPassword}
@@ -181,7 +191,7 @@ const Signup = () => {
             <View style={styles.passwordContainer}>
               <TextInput
                 style={styles.passwordInput}
-                placeholder="Confirm password"
+                placeholder={t('confirmPassword')}
                 placeholderTextColor="#9CA3AF"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
@@ -212,8 +222,7 @@ const Signup = () => {
                 {agree && <Text style={styles.checkMark}>✓</Text>}
               </View>
               <Text style={styles.checkboxLabel}>
-                I agree to the <Text style={styles.linkText}>Terms of Use</Text> and{' '}
-                <Text style={styles.linkText}>Privacy Policy</Text>.
+                {t('agreeTo')}<Text style={styles.linkText}>{t('termsOfUse')}</Text>{t('and')}<Text style={styles.linkText}>{t('privacyPolicy')}</Text>.
               </Text>
             </TouchableOpacity>
 
@@ -226,20 +235,79 @@ const Signup = () => {
               {isReqLoading ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Text style={styles.primaryButtonText}>Sign Up</Text>
+                <Text style={styles.primaryButtonText}>{t('signUp')}</Text>
               )}
             </TouchableOpacity>
           </View>
 
           {/* Bottom Link */}
           <View style={styles.bottomContainer}>
-            <Text style={styles.bottomLabel}>Already have an account? </Text>
+            <Text style={styles.bottomLabel}>{t('alreadyHaveAccount')}</Text>
             <TouchableOpacity onPress={() => navigation.navigate('Login')} activeOpacity={0.7}>
-              <Text style={styles.bottomLink}>Log in</Text>
+              <Text style={styles.bottomLink}>{t('logIn')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Language Picker Modal */}
+      <Modal
+        visible={showLangModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowLangModal(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setShowLangModal(false)}
+        >
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>{t('selectLanguage')}</Text>
+
+            <TouchableOpacity
+              style={[
+                styles.modalOption,
+                lang === 'en' && styles.modalOptionSelected,
+              ]}
+              onPress={() => selectLanguage('en')}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.modalOptionText,
+                  lang === 'en' && styles.modalOptionTextSelected,
+                ]}
+              >
+                {t('english')}
+              </Text>
+              {lang === 'en' && (
+                <Text style={styles.checkmark}>✓</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.modalOption,
+                lang === 'es' && styles.modalOptionSelected,
+              ]}
+              onPress={() => selectLanguage('es')}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.modalOptionText,
+                  lang === 'es' && styles.modalOptionTextSelected,
+                ]}
+              >
+                {t('spanish')}
+              </Text>
+              {lang === 'es' && (
+                <Text style={styles.checkmark}>✓</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -434,5 +502,49 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.semiBold24,
     fontSize: ms(14),
     color: '#1293ED',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'flex-end',
+  },
+  modalContainer: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: ms(24),
+    borderTopRightRadius: ms(24),
+    paddingHorizontal: ms(24),
+    paddingTop: ms(24),
+    paddingBottom: ms(40),
+  },
+  modalTitle: {
+    fontFamily: FONTS.bold28,
+    fontSize: ms(20),
+    color: '#111827',
+    marginBottom: ms(20),
+  },
+  modalOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: ms(16),
+    borderBottomWidth: ms(1),
+    borderBottomColor: '#F3F4F6',
+  },
+  modalOptionSelected: {
+    borderBottomColor: '#EEF2FF',
+  },
+  modalOptionText: {
+    fontFamily: FONTS.medium24,
+    fontSize: ms(16),
+    color: '#4B5563',
+  },
+  modalOptionTextSelected: {
+    color: '#6337EB',
+    fontFamily: FONTS.semiBold24,
+  },
+  checkmark: {
+    fontSize: ms(18),
+    color: '#6337EB',
+    fontWeight: 'bold',
   },
 });

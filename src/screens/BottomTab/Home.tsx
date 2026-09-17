@@ -14,33 +14,116 @@ import LinearGradient from 'react-native-linear-gradient';
 import { useDispatch, useSelector } from 'react-redux';
 import { COLORS, FONTS, ICONS } from '../../utils/constants';
 import { ms } from '../../utils/helper/metric';
-import { myProfileRequest, getDashboardRequest } from '../../redux/reducer/MainReducer';
+import {
+  myProfileRequest,
+  getDashboardRequest,
+} from '../../redux/reducer/MainReducer';
 import Loader from '../../utils/helper/Loader';
-
-
+import { useTranslation } from '../../utils/hooks/useTranslation';
 
 const BellIcon = () => (
-  <View style={{ width: ms(24), height: ms(24), justifyContent: 'center', alignItems: 'center' }}>
+  <View
+    style={{
+      width: ms(24),
+      height: ms(24),
+      justifyContent: 'center',
+      alignItems: 'center',
+    }}
+  >
     {/* Bell body */}
-    <View style={{ width: ms(14), height: ms(14), borderTopLeftRadius: ms(7), borderTopRightRadius: ms(7), borderWidth: ms(2), borderColor: '#111827', position: 'relative', alignItems: 'center' }}>
+    <View
+      style={{
+        width: ms(14),
+        height: ms(14),
+        borderTopLeftRadius: ms(7),
+        borderTopRightRadius: ms(7),
+        borderWidth: ms(2),
+        borderColor: '#111827',
+        position: 'relative',
+        alignItems: 'center',
+      }}
+    >
       {/* Top small loop */}
-      <View style={{ width: ms(4), height: ms(4), borderRadius: ms(2), borderWidth: ms(1.5), borderColor: '#111827', position: 'absolute', top: ms(-5) }} />
+      <View
+        style={{
+          width: ms(4),
+          height: ms(4),
+          borderRadius: ms(2),
+          borderWidth: ms(1.5),
+          borderColor: '#111827',
+          position: 'absolute',
+          top: ms(-5),
+        }}
+      />
     </View>
     {/* Rim */}
-    <View style={{ width: ms(18), height: ms(2), backgroundColor: '#111827', borderRadius: ms(1), marginTop: ms(-1) }} />
+    <View
+      style={{
+        width: ms(18),
+        height: ms(2),
+        backgroundColor: '#111827',
+        borderRadius: ms(1),
+        marginTop: ms(-1),
+      }}
+    />
     {/* Clapper */}
-    <View style={{ width: ms(5), height: ms(3), borderBottomLeftRadius: ms(2.5), borderBottomRightRadius: ms(2.5), backgroundColor: '#111827', marginTop: ms(0.5) }} />
+    <View
+      style={{
+        width: ms(5),
+        height: ms(3),
+        borderBottomLeftRadius: ms(2.5),
+        borderBottomRightRadius: ms(2.5),
+        backgroundColor: '#111827',
+        marginTop: ms(0.5),
+      }}
+    />
   </View>
 );
 
 const DownloadIcon = () => (
-  <View style={{ width: ms(24), height: ms(24), justifyContent: 'center', alignItems: 'center' }}>
+  <View
+    style={{
+      width: ms(24),
+      height: ms(24),
+      justifyContent: 'center',
+      alignItems: 'center',
+    }}
+  >
     {/* Downward arrow stem */}
-    <View style={{ width: ms(3), height: ms(12), backgroundColor: '#111827', borderRadius: ms(1.5), position: 'absolute', top: ms(2) }} />
+    <View
+      style={{
+        width: ms(3),
+        height: ms(12),
+        backgroundColor: '#111827',
+        borderRadius: ms(1.5),
+        position: 'absolute',
+        top: ms(2),
+      }}
+    />
     {/* Arrow head */}
-    <View style={{ width: ms(8), height: ms(8), borderBottomWidth: ms(3), borderRightWidth: ms(3), borderColor: '#111827', transform: [{ rotate: '45deg' }], position: 'absolute', bottom: ms(6) }} />
+    <View
+      style={{
+        width: ms(8),
+        height: ms(8),
+        borderBottomWidth: ms(3),
+        borderRightWidth: ms(3),
+        borderColor: '#111827',
+        transform: [{ rotate: '45deg' }],
+        position: 'absolute',
+        bottom: ms(6),
+      }}
+    />
     {/* Tray/line at the bottom */}
-    <View style={{ width: ms(16), height: ms(2), backgroundColor: '#111827', borderRadius: ms(1), position: 'absolute', bottom: ms(2) }} />
+    <View
+      style={{
+        width: ms(16),
+        height: ms(2),
+        backgroundColor: '#111827',
+        borderRadius: ms(1),
+        position: 'absolute',
+        bottom: ms(2),
+      }}
+    />
   </View>
 );
 
@@ -48,8 +131,11 @@ const Home = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const dispatch = useDispatch();
+  const { t, lang } = useTranslation();
 
-  const { myProfileRes, getDashboardRes, isMainLoading } = useSelector((state: any) => state.MainReducer);
+  const { myProfileRes, getDashboardRes, isMainLoading } = useSelector(
+    (state: any) => state.MainReducer,
+  );
 
   useEffect(() => {
     dispatch(myProfileRequest({}));
@@ -59,7 +145,12 @@ const Home = () => {
   const displayName = myProfileRes?.name || myProfileRes?.data?.name || 'Alex';
 
   const hours = new Date().getHours();
-  const greeting = hours < 12 ? 'Good morning' : hours < 17 ? 'Good afternoon' : 'Good evening';
+  const greeting =
+    hours < 12
+      ? t('goodMorning')
+      : hours < 17
+        ? t('goodAfternoon')
+        : t('goodEvening');
 
   const BLOCK_GRADIENTS = [
     ['#6337EB', '#3B82F6'],
@@ -75,7 +166,8 @@ const Home = () => {
           id: item.id || item.uuid || Math.random().toString(),
           title: item.name || '',
           subtitle: '',
-          image: item.image_path || 'https://picsum.photos/200/200?random=artist',
+          image:
+            item.image_path || 'https://picsum.photos/200/200?random=artist',
           raw: item,
         };
       case 'radio':
@@ -83,7 +175,8 @@ const Home = () => {
           id: item.id || item.uuid || Math.random().toString(),
           title: item.name || '',
           subtitle: item.username ? `@${item.username}` : '',
-          image: item.image_path || 'https://picsum.photos/200/200?random=radio',
+          image:
+            item.image_path || 'https://picsum.photos/200/200?random=radio',
           raw: item,
         };
       case 'playlist':
@@ -91,13 +184,19 @@ const Home = () => {
           id: item.id || item.uuid || Math.random().toString(),
           title: item.title || '',
           subtitle: item.description || '',
-          image: item.cover_image_path || 'https://picsum.photos/200/200?random=playlist',
+          image:
+            item.cover_image_path ||
+            'https://picsum.photos/200/200?random=playlist',
           raw: item,
         };
       case 'block':
+        const blockTitle =
+          lang === 'es'
+            ? item.title_in_spanish || item.title_in_english || item.title || ''
+            : item.title_in_english || item.title || '';
         return {
-          id: item.title || Math.random().toString(),
-          title: item.title || '',
+          id: blockTitle || Math.random().toString(),
+          title: blockTitle,
           subtitle: item.description || '',
           raw: item,
         };
@@ -106,8 +205,15 @@ const Home = () => {
         return {
           id: item.id || item.uuid || Math.random().toString(),
           title: item.title || '',
-          subtitle: [item.featured_artists, item.other_artists].filter(Boolean).join(', ') || item.description || '',
-          image: item.cover_image_path || 'https://picsum.photos/200/200?random=song',
+          subtitle:
+            [item.featured_artists, item.other_artists]
+              .filter(Boolean)
+              .join(', ') ||
+            item.description ||
+            '',
+          image:
+            item.cover_image_path ||
+            'https://picsum.photos/200/200?random=song',
           raw: item,
         };
     }
@@ -128,7 +234,7 @@ const Home = () => {
             style={styles.artistHeaderAvatar}
           />
           <View>
-            <Text style={styles.artistHeaderSubtitle}>More from</Text>
+            <Text style={styles.artistHeaderSubtitle}>{t('moreFrom')}</Text>
             <Text style={styles.artistHeaderTitle}>The Weeknd</Text>
           </View>
         </View>
@@ -140,10 +246,12 @@ const Home = () => {
         <View style={styles.sectionHeaderRow}>
           <Text style={styles.sectionHeaderTitle}>{title}</Text>
           <TouchableOpacity
-            onPress={() => navigation.navigate('SeeAll', { type_id: typeId, title, type })}
+            onPress={() =>
+              navigation.navigate('SeeAll', { type_id: typeId, title, type })
+            }
             activeOpacity={0.7}
           >
-            <Text style={styles.seeAllText}>See all</Text>
+            <Text style={styles.seeAllText}>{t('seeAll')}</Text>
           </TouchableOpacity>
         </View>
       );
@@ -152,9 +260,17 @@ const Home = () => {
     return <Text style={styles.sectionTitle}>{title}</Text>;
   };
 
-  const renderSquareList = (data: any[], rounded: boolean = false, onPress?: (item: any) => void) => (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
-      {data.map((item) => (
+  const renderSquareList = (
+    data: any[],
+    rounded: boolean = false,
+    onPress?: (item: any) => void,
+  ) => (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.horizontalScroll}
+    >
+      {data.map(item => (
         <TouchableOpacity
           key={item.id}
           style={styles.cardContainer}
@@ -178,8 +294,12 @@ const Home = () => {
   );
 
   const renderCircleList = (data: any[], onPress?: (item: any) => void) => (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
-      {data.map((item) => (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.horizontalScroll}
+    >
+      {data.map(item => (
         <TouchableOpacity
           key={item.id}
           style={styles.circleContainer}
@@ -197,8 +317,12 @@ const Home = () => {
   );
 
   const renderChartsList = (data: any[], onPress?: (item: any) => void) => (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
-      {data.map((item) => (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.horizontalScroll}
+    >
+      {data.map(item => (
         <TouchableOpacity
           key={item.id}
           style={styles.chartCard}
@@ -220,8 +344,10 @@ const Home = () => {
     </ScrollView>
   );
 
-  const apiSections = getDashboardRes?.data?.sections || getDashboardRes?.sections;
-  const hasDynamicSections = Array.isArray(apiSections) && apiSections.length > 0;
+  const apiSections =
+    getDashboardRes?.data?.sections || getDashboardRes?.sections;
+  const hasDynamicSections =
+    Array.isArray(apiSections) && apiSections.length > 0;
 
   return (
     <View style={styles.container}>
@@ -231,12 +357,12 @@ const Home = () => {
       {/* Top Header Bar */}
       <View style={[styles.headerContainer, { marginTop: insets.top }]}>
         <View style={styles.headerLeft}>
-          <Text style={styles.greetingText}>{greeting},</Text>
+          <Text style={styles.greetingText}>{greeting}, </Text>
           <Text style={styles.usernameText}>{displayName} 👋</Text>
         </View>
 
         <View style={styles.headerRight}>
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={styles.headerIconButton}
             activeOpacity={0.7}
             onPress={() => navigation.navigate('Notification')}
@@ -249,19 +375,28 @@ const Home = () => {
             onPress={() => navigation.navigate('Downloads')}
           >
             <Image source={ICONS.savefile} style={{ width: ms(22), height: ms(22), resizeMode: 'contain' }} />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       </View>
 
-
       {/* Content Scroll Area */}
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + ms(140) }]}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: insets.bottom + ms(140) },
+        ]}
         showsVerticalScrollIndicator={false}
       >
-        {hasDynamicSections && (
+        {hasDynamicSections &&
           apiSections.map((section: any, sectionIdx: number) => {
-            const { title, type, items } = section;
+            const rawTitle = section.title || '';
+            const titleInEnglish = section.title_in_english || rawTitle;
+            const title =
+              lang === 'es'
+                ? section.title_in_spanish || titleInEnglish
+                : titleInEnglish;
+
+            const { type, items } = section;
             if (!items || items.length === 0) return null;
 
             const mappedItems = items.map((item: any) => mapItem(item, type));
@@ -270,9 +405,14 @@ const Home = () => {
             if (type === 'artist') {
               return (
                 <React.Fragment key={title || sectionIdx}>
-                  {renderSectionHeader(title, section.is_seeall, section.type_id, type)}
-                  {renderCircleList(mappedItems, (item) =>
-                    navigation.navigate('ArtistsDetails', { artist: item })
+                  {renderSectionHeader(
+                    title,
+                    section.is_seeall,
+                    section.type_id,
+                    type,
+                  )}
+                  {renderCircleList(mappedItems, item =>
+                    navigation.navigate('ArtistsDetails', { artist: item }),
                   )}
                 </React.Fragment>
               );
@@ -282,40 +422,73 @@ const Home = () => {
             if (type === 'radio') {
               return (
                 <React.Fragment key={title || sectionIdx}>
-                  {renderSectionHeader(title, section.is_seeall, section.type_id, type)}
-                  {renderCircleList(mappedItems)}
+                  {renderSectionHeader(
+                    title,
+                    section.is_seeall,
+                    section.type_id,
+                    type,
+                  )}
+                  {renderCircleList(mappedItems, item =>
+                    navigation.navigate('ArtistsDetails', { artist: item }),
+                  )}
                 </React.Fragment>
               );
             }
 
             // 3. If section type is 'block' (gradient list)
             if (type === 'block') {
-              const blockItemsWithColors = mappedItems.map((item: any, idx: number) => ({
-                ...item,
-                colors: BLOCK_GRADIENTS[idx % BLOCK_GRADIENTS.length],
-              }));
+              const blockItemsWithColors = mappedItems.map(
+                (item: any, idx: number) => ({
+                  ...item,
+                  colors: BLOCK_GRADIENTS[idx % BLOCK_GRADIENTS.length],
+                }),
+              );
               return (
                 <React.Fragment key={title || sectionIdx}>
-                  {renderSectionHeader(title, section.is_seeall, section.type_id, type)}
+                  {renderSectionHeader(
+                    title,
+                    section.is_seeall,
+                    section.type_id,
+                    type,
+                  )}
                   {renderChartsList(blockItemsWithColors)}
                 </React.Fragment>
               );
             }
 
             // 4. If section type is 'song' and title is 'New Release' or contains 'New' (Render as vertical list)
-            if (type === 'song' && (title === 'New Release' || title.toLowerCase().includes('new'))) {
+            if (
+              type === 'song' &&
+              (titleInEnglish === 'New Release' ||
+                titleInEnglish.toLowerCase().includes('new') ||
+                section.type_id === 'new-release')
+            ) {
               return (
                 <React.Fragment key={title || sectionIdx}>
-                  {renderSectionHeader(title, section.is_seeall, section.type_id, type)}
+                  {renderSectionHeader(
+                    title,
+                    section.is_seeall,
+                    section.type_id,
+                    type,
+                  )}
                   <View style={styles.verticalTracksContainer}>
                     {mappedItems.map((track: any) => (
                       <TouchableOpacity
                         key={track.id}
                         style={styles.trackRow}
                         activeOpacity={0.7}
-                        onPress={() => navigation.navigate('MusicPlay', { track: track.raw || track })}
+                        onPress={() =>
+                          navigation.navigate('MusicPlay', {
+                            track: track.raw || track,
+                            fromScreen: 'Home',
+                            type_id: section.type_id,
+                          })
+                        }
                       >
-                        <Image source={{ uri: track.image }} style={styles.trackImage} />
+                        <Image
+                          source={{ uri: track.image }}
+                          style={styles.trackImage}
+                        />
                         <View style={styles.trackDetails}>
                           <Text style={styles.trackTitle} numberOfLines={1}>
                             {track.title}
@@ -338,18 +511,34 @@ const Home = () => {
             const isPlaylist = type === 'playlist';
             return (
               <React.Fragment key={title || sectionIdx}>
-                {renderSectionHeader(title, section.is_seeall, section.type_id, type)}
+                {renderSectionHeader(
+                  title,
+                  section.is_seeall,
+                  section.type_id,
+                  type,
+                )}
                 {renderSquareList(
                   mappedItems,
                   isPlaylist,
-                  type === 'song' ? (track) => navigation.navigate('MusicPlay', { track: track.raw || track }) : undefined
+                  type === 'song'
+                    ? track =>
+                        navigation.navigate('MusicPlay', {
+                          track: track.raw || track,
+                          fromScreen: 'Home',
+                          type_id: section.type_id,
+                        })
+                    : type === 'playlist'
+                    ? item =>
+                        navigation.navigate('PlayList', {
+                          playlist: item.raw || item,
+                          hideAddSong: true,
+                        })
+                    : undefined,
                 )}
               </React.Fragment>
             );
-          })
-        )}
+          })}
       </ScrollView>
-
     </View>
   );
 };
@@ -368,10 +557,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: ms(16),
     // height: ms(64),
     backgroundColor: '#FFFFFF',
-    paddingVertical: ms(10)
+    paddingVertical: ms(20),
   },
   headerLeft: {
+    flexDirection: 'row',
     justifyContent: 'center',
+    alignItems: 'center',
   },
   greetingText: {
     fontFamily: FONTS.medium24,
@@ -384,7 +575,7 @@ const styles = StyleSheet.create({
     fontSize: ms(20),
     color: '#111827',
     includeFontPadding: false,
-    marginTop: ms(8),
+    // marginTop: ms(8),
   },
   headerRight: {
     flexDirection: 'row',
@@ -429,7 +620,7 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   scrollContent: {
-    paddingTop: ms(16),
+    paddingTop: ms(6),
   },
   sectionTitle: {
     fontFamily: FONTS.bold28,
@@ -681,4 +872,3 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
 });
-

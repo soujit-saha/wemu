@@ -16,6 +16,19 @@ import {
   getArtistDetailsRequest,
   getArtistDetailsSuccess,
   getArtistDetailsFailure,
+  toggleSongLikeSuccess,
+  toggleSongLikeFailure,
+  toggleArtistFollowSuccess,
+  toggleArtistFollowFailure,
+  raiseHelpRequest,
+  raiseHelpSuccess,
+  raiseHelpFailure,
+  supportArticlesRequest,
+  supportArticlesSuccess,
+  supportArticlesFailure,
+  getCmsRequest,
+  getCmsSuccess,
+  getCmsFailure,
 } from '../reducer/MainReducer';
 // import { getApi, postApi } from '../../utils/helper/ApiRequest';
 import { ApiHeaders, ApiResponse } from '../types';
@@ -149,6 +162,112 @@ export function* getArtistDetailsSaga(
   }
 }
 
+export function* toggleSongLikeSaga(
+  action: PayloadAction<any>,
+): Generator<any, void, any> {
+  const item = yield select(getItems);
+  const header: ApiHeaders = {
+    Accept: 'application/json',
+    contenttype: 'application/json',
+    accesstoken: item.getTokenResponse,
+  };
+  try {
+    const songId = action.payload?.id ?? action.payload ?? 1;
+    const response: ApiResponse = yield call(getApi, `toggle-song-like/${songId}`, header);
+    yield put(toggleSongLikeSuccess(response?.data));
+    if (response?.data?.message) {
+      ToastAlert(response.data.message);
+    }
+  } catch (error: any) {
+    yield put(toggleSongLikeFailure(error));
+    ToastAlert(error?.response?.data?.message || 'toggleSongLike Failed');
+  }
+}
+
+export function* toggleArtistFollowSaga(
+  action: PayloadAction<any>,
+): Generator<any, void, any> {
+  const item = yield select(getItems);
+  const header: ApiHeaders = {
+    Accept: 'application/json',
+    contenttype: 'application/json',
+    accesstoken: item.getTokenResponse,
+  };
+  try {
+    const artistId = action.payload?.id ?? action.payload ?? 1;
+    const response: ApiResponse = yield call(getApi, `toggle-artist-follow/${artistId}`, header);
+    yield put(toggleArtistFollowSuccess(response?.data));
+    if (response?.data?.message) {
+      ToastAlert(response.data.message);
+    }
+  } catch (error: any) {
+    yield put(toggleArtistFollowFailure(error));
+    ToastAlert(error?.response?.data?.message || 'toggleArtistFollow Failed');
+  }
+}
+
+export function* raiseHelpSaga(
+  action: PayloadAction<any>,
+): Generator<any, void, any> {
+  const item = yield select(getItems);
+  const isFormData = action.payload instanceof FormData;
+  const header: ApiHeaders = {
+    Accept: 'application/json',
+    contenttype: isFormData ? 'multipart/form-data' : 'application/json',
+    accesstoken: item.getTokenResponse,
+  };
+  try {
+    const response: ApiResponse = yield call(
+      postApi,
+      'raise-help',
+      action.payload,
+      header,
+    );
+    yield put(raiseHelpSuccess(response?.data));
+    ToastAlert(response?.data?.message || 'Help requested successfully');
+  } catch (error: any) {
+    yield put(raiseHelpFailure(error));
+    ToastAlert(error?.response?.data?.message || 'raiseHelp Failed');
+  }
+}
+
+export function* supportArticlesSaga(
+  action: PayloadAction<any>,
+): Generator<any, void, any> {
+  const item = yield select(getItems);
+  const header: ApiHeaders = {
+    Accept: 'application/json',
+    contenttype: 'application/json',
+    accesstoken: item.getTokenResponse,
+  };
+  try {
+    const response: ApiResponse = yield call(getApi, 'support-articles', header);
+    yield put(supportArticlesSuccess(response?.data));
+  } catch (error: any) {
+    yield put(supportArticlesFailure(error));
+    ToastAlert(error?.response?.data?.message || 'supportArticles Failed');
+  }
+}
+
+export function* getCmsSaga(
+  action: PayloadAction<any>,
+): Generator<any, void, any> {
+  const item = yield select(getItems);
+  const header: ApiHeaders = {
+    Accept: 'application/json',
+    contenttype: 'application/json',
+    accesstoken: item.getTokenResponse,
+  };
+  try {
+    const slug = action.payload;
+    const response: ApiResponse = yield call(getApi, `pages?slug=${slug}`, header);
+    yield put(getCmsSuccess(response?.data));
+  } catch (error: any) {
+    yield put(getCmsFailure(error));
+    ToastAlert(error?.response?.data?.message || 'getCms Failed');
+  }
+}
+
 // Watcher Saga
 export function* watchMainSaga(): Generator<any, void, any> {
   yield takeLatest('Main/myProfileRequest', myProfileSaga);
@@ -156,4 +275,9 @@ export function* watchMainSaga(): Generator<any, void, any> {
   yield takeLatest('Main/updateProfileRequest', updateProfileSaga);
   yield takeLatest('Main/getDashboardRequest', getDashboardSaga);
   yield takeLatest('Main/getArtistDetailsRequest', getArtistDetailsSaga);
+  yield takeLatest('Main/toggleSongLikeRequest', toggleSongLikeSaga);
+  yield takeLatest('Main/toggleArtistFollowRequest', toggleArtistFollowSaga);
+  yield takeLatest('Main/raiseHelpRequest', raiseHelpSaga);
+  yield takeLatest('Main/supportArticlesRequest', supportArticlesSaga);
+  yield takeLatest('Main/getCmsRequest', getCmsSaga);
 }

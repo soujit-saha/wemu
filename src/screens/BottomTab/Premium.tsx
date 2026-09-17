@@ -22,12 +22,14 @@ import {
 } from '../../redux/reducer/SubscriptionReducer';
 import Loader from '../../utils/helper/Loader';
 import ToastAlert from '../../utils/helper/Toast';
+import { useTranslation } from '../../utils/hooks/useTranslation';
 
 const Premium = () => {
   const insets = useSafeAreaInsets();
   const dispatch = useDispatch();
   const scrollViewRef = useRef<ScrollView>(null);
   const [availablePlansY, setAvailablePlansY] = useState(0);
+  const { t } = useTranslation();
 
   const { createPaymentMethod } = useStripe();
   const [isPaymentModalVisible, setIsPaymentModalVisible] = useState(false);
@@ -64,7 +66,7 @@ const Premium = () => {
 
   useEffect(() => {
     if (status === 'Subscription/purchaseSubscriptionSuccess') {
-      ToastAlert('Subscription purchased successfully!');
+      ToastAlert(t('subSuccess'));
       dispatch(myCurrentSubscriptionRequest({}));
     }
   }, [purchaseSubscriptionRes, status, dispatch]);
@@ -78,7 +80,7 @@ const Premium = () => {
       });
 
       if (error) {
-        ToastAlert(error.message || 'Payment method creation failed');
+        ToastAlert(error.message || t('paymentMethodFailed'));
         setIsPaying(false);
       } else if (paymentMethod) {
         dispatch(
@@ -91,7 +93,7 @@ const Premium = () => {
         setIsPaying(false);
       }
     } catch (err: any) {
-      ToastAlert(err.message || 'An error occurred');
+      ToastAlert(err.message || t('anErrorOccurred'));
       setIsPaying(false);
     }
   };
@@ -197,22 +199,22 @@ const Premium = () => {
 
             <Text style={styles.activePlanName}>{activePlanName}</Text>
             <Text style={styles.activePlanDescription}>
-              Enjoy unlimited skips, ad-free music, offline listening, and maximum audio quality.
+              {t('premiumFeaturesDesc')}
             </Text>
 
             {expiryDate ? (
               <Text style={styles.activePlanRenewal}>
-                Renews on {formatDate(expiryDate)}
+                {t('renewsOn')} {formatDate(expiryDate)}
               </Text>
             ) : null}
           </View>
         ) : (
           <View style={styles.promoSection}>
             <Text style={styles.promoTitle}>
-              You are on the Free Tier
+              {t('freeTier')}
             </Text>
             <Text style={styles.promoSubtitle}>
-              Upgrade to Premium for ad-free music, offline downloads, and higher sound quality.
+              {t('upgradeDesc')}
             </Text>
             <TouchableOpacity
               style={styles.promoCTA}
@@ -226,10 +228,10 @@ const Premium = () => {
                 }
               }}
             >
-              <Text style={styles.promoCTAText}>Explore Premium Plans</Text>
+              <Text style={styles.promoCTAText}>{t('explorePlans')}</Text>
             </TouchableOpacity>
             <Text style={styles.promoDisclaimer}>
-              Terms apply. Cancel anytime. Available plans are shown below.
+              {t('termsDisclaimer')}
             </Text>
           </View>
         )}
@@ -241,7 +243,7 @@ const Premium = () => {
             setAvailablePlansY(event.nativeEvent.layout.y);
           }}
         >
-          <Text style={styles.sectionTitle}>Available plans</Text>
+          <Text style={styles.sectionTitle}>{t('availablePlans')}</Text>
           {/* <Text style={styles.sectionSubtitle}>Always flexible, cancel anytime.</Text> */}
         </View>
 
@@ -295,7 +297,7 @@ const Premium = () => {
                 <View style={styles.priceRow}>
                   <Text style={styles.priceHighlight}>{formattedPrice}</Text>
                   {plan.trial_days > 0 ? (
-                    <Text style={styles.priceSubtext}>{plan.trial_days} days trial period</Text>
+                    <Text style={styles.priceSubtext}>{plan.trial_days} {t('daysTrial')}</Text>
                   ) : null}
                 </View>
 
@@ -308,7 +310,7 @@ const Premium = () => {
                   }}
                 >
                   <Text style={[styles.planCTAText, { color: theme.badgeText }]}>
-                    Get {plan.name}
+                    {t('getPlan')} {plan.name}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -318,7 +320,7 @@ const Premium = () => {
           !isLoading && (
             <View style={{ alignItems: 'center', marginVertical: ms(40) }}>
               <Text style={{ fontFamily: FONTS.medium24, fontSize: ms(14), color: '#9CA3AF' }}>
-                No plans available at the moment.
+                {t('noPlansAvailable')}
               </Text>
             </View>
           )
@@ -335,10 +337,10 @@ const Premium = () => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Enter Card Details</Text>
+            <Text style={styles.modalTitle}>{t('enterCardDetails')}</Text>
             {selectedPlanForPayment && (
               <Text style={styles.modalSubtitle}>
-                Subscribing to {selectedPlanForPayment.name}
+                {t('subscribingTo')} {selectedPlanForPayment.name}
               </Text>
             )}
 
@@ -364,7 +366,7 @@ const Premium = () => {
               {isPaying ? (
                 <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
-                <Text style={styles.modalPayButtonText}>Pay & Subscribe</Text>
+                <Text style={styles.modalPayButtonText}>{t('paySubscribe')}</Text>
               )}
             </TouchableOpacity>
 
@@ -374,7 +376,7 @@ const Premium = () => {
               onPress={() => setIsPaymentModalVisible(false)}
               disabled={isPaying}
             >
-              <Text style={styles.modalCancelButtonText}>Cancel</Text>
+              <Text style={styles.modalCancelButtonText}>{t('cancel')}</Text>
             </TouchableOpacity>
           </View>
         </View>

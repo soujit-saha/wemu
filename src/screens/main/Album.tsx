@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -6,13 +6,22 @@ import {
   StatusBar,
   TouchableOpacity,
   Image,
-  ScrollView,
+  FlatList,
+  ActivityIndicator,
 } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
+import { songsByAlbumRequest } from '../../redux/reducer/SongReducer';
+import TrackPlayer, {
+  State,
+  usePlaybackState,
+  useActiveTrack,
+} from 'react-native-track-player';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { COLORS, FONTS, ICONS } from '../../utils/constants';
 import { ms } from '../../utils/helper/metric';
 import FloatingPlayer from '../../component/FloatingPlayer';
+import { useTranslation } from '../../utils/hooks/useTranslation';
 
 interface TrackItem {
   id: string;
@@ -32,6 +41,192 @@ const ALBUM_TRACKS: TrackItem[] = [
 
 const Album = () => {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const { t } = useTranslation();
+  const dispatch = useDispatch();
+
+  const albumData = route.params?.id || {};
+  const artworkUrl =
+    albumData.image ||
+    albumData.cover_image_path ||
+    albumData.cover_image ||
+    'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=600&auto=format&fit=crop';
+  const title = albumData.title || albumData.name || 'Unknown Album';
+  const artistName = albumData?.artist?.name || albumData?.created_by?.name || albumData?.artist_name || 'Unknown Artist';
+
+  const { songsByAlbumRes, isLoading } = useSelector(
+    (state: any) => state.SongReducer
+  );
+
+  const [page, setPage] = useState(1);
+  const [localItems, setLocalItems] = useState<any[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  useEffect(() => {
+    const albumId = albumData?.id || albumData?.uuid;
+    if (albumId) {
+      setPage(1);
+      setLocalItems([]);
+      setHasMore(true);
+      dispatch(songsByAlbumRequest({ id: albumId, page: 1 }));
+    }
+  }, [albumData?.id, albumData?.uuid]);
+
+  const albumTracksRes = songsByAlbumRes?.data?.result || songsByAlbumRes?.data || [];
+
+  useEffect(() => {
+    if (songsByAlbumRes) {
+      if (page === 1) {
+        setLocalItems(albumTracksRes);
+      } else {
+        if (albumTracksRes && albumTracksRes.length > 0) {
+          setLocalItems(prev => {
+            const newItems = albumTracksRes.filter((item: any) => 
+              !prev.some((p: any) => (p.id || p.uuid) === (item.id || item.uuid))
+            );
+            return [...prev, ...newItems];
+          });
+          
+          if (albumTracksRes.length < 15) {
+            setHasMore(false);
+          }
+        }
+        if (!albumTracksRes || albumTracksRes.length === 0) {
+          setHasMore(false);
+        }
+      }
+      setIsLoadingMore(false);
+    }
+  }, [songsByAlbumRes]);
+
+  useEffect(() => {
+    if (!isLoading) {
+      setIsLoadingMore(false);
+    }
+  }, [isLoading]);
+
+  const loadMore = () => {
+    if (!isLoading && !isLoadingMore && hasMore && localItems.length > 0) {
+      const nextPage = page + 1;
+      const albumId = albumData?.id || albumData?.uuid;
+      setIsLoadingMore(true);
+      setPage(nextPage);
+      dispatch(songsByAlbumRequest({ id: albumId, page: nextPage }));
+    }
+  };
+
+  const playbackState = usePlaybackState();
+  const activeTrack = useActiveTrack();
+  const stateVal =
+    typeof playbackState === 'object' && playbackState !== null
+      ? (playbackState as any).state
+      : playbackState;
+  const isPlaying =
+    stateVal === State.Playing ||
+    stateVal === 'playing' ||
+    stateVal === 'buffering' ||
+    stateVal === State.Buffering;
+
+  const handlePlayPlaylist = async () => {
+    if (localItems.length === 0) return;
+
+    const isCurrentlyPlayingPlaylist = localItems.some(
+      (t: any) => t.id?.toString() === activeTrack?.id,
+    );
+
+    try {
+      try {
+        await TrackPlayer.setupPlayer({});
+      } catch (e) { }
+
+      if (isCurrentlyPlayingPlaylist) {
+        if (isPlaying) {
+          await TrackPlayer.pause();
+        } else {
+          await TrackPlayer.play();
+          const currentPlaying =
+            localItems.find((t: any) => t.id?.toString() === activeTrack?.id) ||
+            localItems[0];
+          navigation.navigate('MusicPlay', { track: currentPlaying, fromScreen: 'Album' });
+        }
+      } else {
+        await TrackPlayer.reset();
+
+        const trackQueue = localItems.map((trackItem: any) => ({
+          id: trackItem.id?.toString(),
+          url:
+            trackItem.audio_file_path ||
+            trackItem.url ||
+            'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+          title: trackItem.title || trackItem.name || 'Unknown Title',
+          artist:
+            trackItem.other_artists ||
+            trackItem.artist_name ||
+            'Unknown Artist',
+          artwork:
+            trackItem.cover_image_path ||
+            trackItem.image ||
+            'https://picsum.photos/200',
+          duration:
+            parseFloat(trackItem.duration || trackItem.total_duration) || 0,
+        }));
+
+        await TrackPlayer.add(trackQueue);
+        await TrackPlayer.play();
+
+        navigation.navigate('MusicPlay', { track: localItems[0], fromScreen: 'Album' });
+      }
+    } catch (error) {
+      console.error('Error playing album:', error);
+    }
+  };
+
+  const handlePlaySpecificSong = async (track: any, index: number) => {
+    try {
+      try {
+        await TrackPlayer.setupPlayer({});
+      } catch (e) { }
+
+      const isCurrentlyPlayingThisSong =
+        activeTrack?.id === track.id?.toString();
+
+      if (isCurrentlyPlayingThisSong) {
+        if (!isPlaying) {
+          await TrackPlayer.play();
+        }
+        navigation.navigate('MusicPlay', { track, fromScreen: 'Album' });
+        return;
+      }
+
+      await TrackPlayer.reset();
+
+      const trackQueue = localItems.map((trackItem: any) => ({
+        id: trackItem.id?.toString(),
+        url:
+          trackItem.audio_file_path ||
+          trackItem.url ||
+          'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+        title: trackItem.title || trackItem.name || 'Unknown Title',
+        artist:
+          trackItem.other_artists || trackItem.artist_name || 'Unknown Artist',
+        artwork:
+          trackItem.cover_image_path ||
+          trackItem.image ||
+          'https://picsum.photos/200',
+        duration:
+          parseFloat(trackItem.duration || trackItem.total_duration) || 0,
+      }));
+
+      await TrackPlayer.add(trackQueue);
+      await TrackPlayer.skip(index);
+      await TrackPlayer.play();
+
+      navigation.navigate('MusicPlay', { track, fromScreen: 'Album' });
+    } catch (error) {
+      console.error('Error playing specific song:', error);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -46,50 +241,106 @@ const Album = () => {
         >
           <Image source={ICONS.leftarrow} style={styles.backIcon} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Album</Text>
+        <Text style={styles.headerTitle}>{t('album')}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* Album Artwork */}
-        <View style={styles.artworkContainer}>
-          <Image
-            source={{ uri: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=600&auto=format&fit=crop' }}
-            style={styles.artworkImage}
-          />
-        </View>
+      <FlatList
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        data={localItems}
+        keyExtractor={(item, index) => item.id?.toString() || index.toString()}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
+        ListHeaderComponent={
+          <>
+            {/* Album Artwork */}
+            <View style={styles.artworkContainer}>
+              <Image
+                source={{ uri: artworkUrl }}
+                style={styles.artworkImage}
+              />
+            </View>
 
-        {/* Album Info */}
-        <View style={styles.infoContainer}>
-          <Text style={styles.albumTitle}>After Hours</Text>
-          <Text style={styles.albumMetadata}>The Weeknd • 2020</Text>
-        </View>
+            {/* Album Info */}
+            <View style={styles.infoContainer}>
+              <Text style={styles.albumTitle}>{title}</Text>
+              <Text style={styles.albumMetadata}>{artistName}</Text>
+            </View>
 
-        {/* Control Buttons */}
-        <View style={styles.controlsRow}>
-          <TouchableOpacity style={styles.playButton} activeOpacity={0.8}>
-            <Text style={styles.playButtonIcon}>▶</Text>
-            <Text style={styles.playButtonText}>Play</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.addButton} activeOpacity={0.7}>
-            <Text style={styles.addButtonText}>+</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Tracklist */}
-        <View style={styles.tracklistContainer}>
-          {ALBUM_TRACKS.map((track) => (
-            <View key={track.id} style={styles.trackRow}>
-              <Text style={styles.trackNumber}>{track.number}</Text>
-              <Text style={styles.trackTitle}>{track.title}</Text>
-              <TouchableOpacity style={styles.optionsButton} activeOpacity={0.7}>
-                <Text style={styles.optionsText}>•••</Text>
+            {/* Control Buttons */}
+            <View style={styles.controlsRow}>
+              <TouchableOpacity
+                style={styles.playButton}
+                activeOpacity={0.8}
+                onPress={handlePlayPlaylist}
+              >
+                {isPlaying &&
+                  localItems.some((t: any) => t.id?.toString() === activeTrack?.id) ? (
+                  <View style={{ flexDirection: 'row', gap: ms(4) }}>
+                    <View style={{ width: ms(3), height: ms(14), backgroundColor: '#FFF', borderRadius: ms(0.5) }} />
+                    <View style={{ width: ms(3), height: ms(14), backgroundColor: '#FFF', borderRadius: ms(0.5) }} />
+                  </View>
+                ) : (
+                  <>
+                    <Text style={styles.playButtonIcon}>▶</Text>
+                    <Text style={styles.playButtonText}>{t('play')}</Text>
+                  </>
+                )}
               </TouchableOpacity>
             </View>
-          ))}
-        </View>
-      </ScrollView>
+          </>
+        }
+        renderItem={({ item: track, index }) => (
+          <TouchableOpacity
+            style={styles.trackRow}
+            activeOpacity={0.7}
+            onPress={() => handlePlaySpecificSong(track, index)}
+          >
+            {/* Cover Art */}
+            <Image
+              source={{
+                uri:
+                  track.cover_image_path ||
+                  track.image ||
+                  'https://picsum.photos/200',
+              }}
+              style={styles.trackArt}
+            />
+
+            {/* Track Info */}
+            <View style={styles.trackDetails}>
+              <Text style={styles.trackTitle} numberOfLines={1}>
+                {track.title || track.name}
+              </Text>
+              <Text style={styles.trackArtist} numberOfLines={1}>
+                {track.other_artists ||
+                  track.artist_name ||
+                  'Unknown Artist'}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        )}
+        ItemSeparatorComponent={() => <View style={{ height: ms(16) }} />}
+        ListEmptyComponent={
+          isLoading && page === 1 ? (
+            <ActivityIndicator size="large" color="#6337EB" style={{ marginTop: ms(20) }} />
+          ) : (
+            <View style={{ alignItems: 'center', marginTop: ms(20) }}>
+              <Text style={{ color: '#6B7280', fontFamily: FONTS.medium24, fontSize: ms(14) }}>
+                {t('noSongsFound')}
+              </Text>
+            </View>
+          )
+        }
+        ListFooterComponent={
+          localItems.length > 0 && isLoadingMore ? (
+            <View style={{ paddingVertical: 20 }}>
+              <ActivityIndicator size="large" color="#6337EB" />
+            </View>
+          ) : <View style={{ height: ms(20) }} />
+        }
+      />
 
       {/* Floating Mini Player */}
       <FloatingPlayer />
@@ -212,28 +463,36 @@ const styles = StyleSheet.create({
     lineHeight: ms(24),
     includeFontPadding: false,
   },
-  tracklistContainer: {
-    marginTop: ms(8),
+  tracksContainer: {
+    gap: ms(16),
   },
   trackRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: ms(14),
-    borderBottomWidth: ms(1),
-    borderBottomColor: '#F3F4F6',
+    height: ms(56),
   },
-  trackNumber: {
-    fontFamily: FONTS.medium24,
-    fontSize: ms(14),
-    color: '#9CA3AF',
-    width: ms(24),
-    includeFontPadding: false,
+  trackArt: {
+    width: ms(46),
+    height: ms(46),
+    borderRadius: ms(8),
+    backgroundColor: '#F3F4F6',
+  },
+  trackDetails: {
+    flex: 1,
+    marginLeft: ms(14),
+    justifyContent: 'center',
   },
   trackTitle: {
-    fontFamily: FONTS.medium24,
+    fontFamily: FONTS.semiBold24,
     fontSize: ms(14),
     color: '#111827',
-    flex: 1,
+    includeFontPadding: false,
+  },
+  trackArtist: {
+    fontFamily: FONTS.regular24,
+    fontSize: ms(12),
+    color: '#6B7280',
+    marginTop: ms(2),
     includeFontPadding: false,
   },
   optionsButton: {

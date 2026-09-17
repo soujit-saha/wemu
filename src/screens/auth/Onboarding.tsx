@@ -16,34 +16,35 @@ import { useDispatch } from 'react-redux';
 import { COLORS, FONTS, IMAGES } from '../../utils/constants';
 import { ms } from '../../utils/helper/metric';
 import { setOnboardingSeen } from '../../redux/reducer/AuthReducer';
+import { useTranslation } from '../../utils/hooks/useTranslation';
 
 const { width } = Dimensions.get('window');
 
 interface SlideItem {
     id: number;
     image: any;
-    title: string;
-    subtitle: string;
+    titleKey: string;
+    subtitleKey: string;
 }
 
 const slides: SlideItem[] = [
     {
         id: 1,
         image: IMAGES.onboarding_1,
-        title: 'Discover new music.',
-        subtitle: 'Millions of songs and\nplaylists just for you.',
+        titleKey: 'discoverNewMusic',
+        subtitleKey: 'discoverNewMusicSub',
     },
     {
         id: 2,
         image: IMAGES.onboarding_2,
-        title: 'Play your favorites.',
-        subtitle: 'Listen on mobile, desktop\nand other devices.',
+        titleKey: 'playYourFavorites',
+        subtitleKey: 'playYourFavoritesSub',
     },
     {
         id: 3,
         image: IMAGES.onboarding_3,
-        title: 'Download & listen offline.',
-        subtitle: 'Enjoy music without\nan internet connection.',
+        titleKey: 'downloadListenOffline',
+        subtitleKey: 'downloadListenOfflineSub',
     },
 ];
 
@@ -52,6 +53,7 @@ const Onboarding = () => {
     const dispatch = useDispatch();
     const [activeIndex, setActiveIndex] = useState(0);
     const flatListRef = useRef<FlatList<SlideItem>>(null);
+    const { t } = useTranslation();
 
     const handleButtonPress = async () => {
         if (activeIndex < slides.length - 1) {
@@ -90,8 +92,8 @@ const Onboarding = () => {
 
                 {/* Text Section */}
                 <View style={styles.textContainer}>
-                    <Text style={styles.title}>{item.title}</Text>
-                    <Text style={styles.subtitle}>{item.subtitle}</Text>
+                    <Text style={styles.title}>{t(item.titleKey)}</Text>
+                    <Text style={styles.subtitle}>{t(item.subtitleKey)}</Text>
                 </View>
             </View>
         );
@@ -140,7 +142,7 @@ const Onboarding = () => {
                     activeOpacity={0.8}
                 >
                     <Text style={styles.primaryButtonText}>
-                        {activeIndex === slides.length - 1 ? 'Get Started' : 'Next'}
+                        {activeIndex === slides.length - 1 ? t('getStarted') : t('next')}
                     </Text>
                 </TouchableOpacity>
             </View>

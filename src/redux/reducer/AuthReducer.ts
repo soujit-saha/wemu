@@ -14,6 +14,7 @@ export interface AuthState {
   ForgotPasswordRes?: {};
   deleteAccountRes?: {};
   hasSeenOnboarding: boolean;
+  lang: 'en' | 'es';
 }
 
 const initialState: AuthState = {
@@ -29,6 +30,7 @@ const initialState: AuthState = {
   ForgotPasswordRes: {},
   deleteAccountRes: {},
   hasSeenOnboarding: false,
+  lang: 'en',
 };
 
 const AuthSlice = createSlice({
@@ -166,6 +168,10 @@ const AuthSlice = createSlice({
     setOnboardingSeen(state, action: PayloadAction<boolean>) {
       state.hasSeenOnboarding = action.payload;
     },
+
+    setLanguage(state, action: PayloadAction<'en' | 'es'>) {
+      state.lang = action.payload;
+    },
   },
 });
 
@@ -203,6 +209,7 @@ export const {
   deleteAccountFailure,
 
   setOnboardingSeen,
+  setLanguage,
 } = AuthSlice.actions;
 
 export default AuthSlice.reducer;

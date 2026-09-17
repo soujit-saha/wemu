@@ -29,6 +29,7 @@ import PlayList from '../screens/main/PlayList';
 import CreatePlayList from '../screens/main/CreatePlayList';
 import EditProfile from '../screens/main/EditProfile';
 import SeeAll from '../screens/main/SeeAll';
+import HelpSupport from '../screens/main/HelpSupport';
 import ArtistsDetails from '../screens/main/ArtistsDetails';
 
 type RootStackParamList = {
@@ -50,6 +51,7 @@ type RootStackParamList = {
   PlayList: undefined;
   CreatePlayList: undefined;
   EditProfile: undefined;
+  HelpSupport: undefined;
   SeeAll: { type_id: string; title: string };
   ArtistsDetails: { artist: any };
 };
@@ -88,39 +90,40 @@ export default function StackNav() {
   const Screens: Partial<{
     [key in keyof RootStackParamList]: React.ComponentType<any>;
   }> =
-    getTokenResponse == null ?
-      (hasSeenOnboarding ?
-        {
-          Login,
-          Signup,
-          Otp,
-          ForgotPassword,
-          OtpVerify,
-          ResetPassword,
-        } : {
-          Onboarding,
-          Login,
-          Signup,
-          Otp,
-          ForgotPassword,
-          OtpVerify,
-          ResetPassword,
-        }
-      ) : {
-        BottomTab,
-        MusicPlay,
-        Share,
-        Notification,
-        Offline,
-        Downloads,
-        Album,
-        PlayList,
-        CreatePlayList,
-        EditProfile,
-        SeeAll,
-        ArtistsDetails,
-      };
-
+    getTokenResponse == null
+      ? hasSeenOnboarding
+        ? {
+            Login,
+            Signup,
+            Otp,
+            ForgotPassword,
+            OtpVerify,
+            ResetPassword,
+          }
+        : {
+            Onboarding,
+            Login,
+            Signup,
+            Otp,
+            ForgotPassword,
+            OtpVerify,
+            ResetPassword,
+          }
+      : {
+          BottomTab,
+          MusicPlay,
+          Share,
+          Notification,
+          Offline,
+          Downloads,
+          Album,
+          PlayList,
+          CreatePlayList,
+          EditProfile,
+          SeeAll,
+          ArtistsDetails,
+          HelpSupport,
+        };
 
   if (isLoading) {
     return <SplashScreen />;
@@ -145,9 +148,10 @@ export default function StackNav() {
                 options={{
                   ...(isMusicPlay
                     ? {
-                      gestureDirection: 'vertical' as const,
-                      cardStyleInterpolator: CardStyleInterpolators.forVerticalIOS,
-                    }
+                        gestureDirection: 'vertical' as const,
+                        cardStyleInterpolator:
+                          CardStyleInterpolators.forVerticalIOS,
+                      }
                     : smoothTransition),
                   // gestureEnabled: true,
                   gestureResponseDistance: 50, // Increase swipe sensitivity

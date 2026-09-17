@@ -13,6 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import { COLORS, FONTS, ICONS } from '../../utils/constants';
 import { ms } from '../../utils/helper/metric';
 import FloatingPlayer from '../../component/FloatingPlayer';
+import { useTranslation } from '../../utils/hooks/useTranslation';
 
 const NOTIFICATION_TABS = ['All', 'Inbox', 'Activity', 'Offers'];
 
@@ -64,6 +65,7 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
 
 const Notification = () => {
   const navigation = useNavigation<any>();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('All');
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
 
@@ -103,6 +105,16 @@ const Notification = () => {
     }
   };
 
+  const getTabLabel = (tab: string) => {
+    switch (tab) {
+      case 'All': return t('all');
+      case 'Inbox': return t('inbox');
+      case 'Activity': return t('activity');
+      case 'Offers': return t('offers');
+      default: return tab;
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
@@ -116,7 +128,7 @@ const Notification = () => {
         >
           <Image source={ICONS.leftarrow} style={styles.backIcon} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Notifications</Text>
+        <Text style={styles.headerTitle}>{t('notifications')}</Text>
         <TouchableOpacity
           onPress={handleMarkAllRead}
           activeOpacity={0.7}
@@ -128,7 +140,7 @@ const Notification = () => {
               !notifications.some((n) => !n.read) && styles.headerActionTextDisabled,
             ]}
           >
-            Mark read
+            {t('markRead')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -154,7 +166,7 @@ const Notification = () => {
                     isActive && styles.tabButtonTextActive,
                   ]}
                 >
-                  {tab}
+                  {getTabLabel(tab)}
                 </Text>
               </TouchableOpacity>
             );
@@ -200,7 +212,7 @@ const Notification = () => {
         ) : (
           <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>📭</Text>
-            <Text style={styles.emptyText}>No notifications in {activeTab}</Text>
+            <Text style={styles.emptyText}>{t('noNotificationsIn')} {getTabLabel(activeTab)}</Text>
           </View>
         )}
       </ScrollView>

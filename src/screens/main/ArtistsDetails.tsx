@@ -16,8 +16,9 @@ import LinearGradient from 'react-native-linear-gradient';
 import { COLORS, FONTS, ICONS } from '../../utils/constants';
 import { ms } from '../../utils/helper/metric';
 import FloatingPlayer from '../../component/FloatingPlayer';
-import { getArtistDetailsRequest } from '../../redux/reducer/MainReducer';
+import { getArtistDetailsRequest, toggleArtistFollowRequest } from '../../redux/reducer/MainReducer';
 import Loader from '../../utils/helper/Loader';
+import { useTranslation } from '../../utils/hooks/useTranslation';
 
 const { width } = Dimensions.get('window');
 
@@ -37,6 +38,7 @@ const ArtistsDetails = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const { artist } = route.params || {};
 
   const artistId = artist?.id || artist?.uuid || 4;
@@ -60,23 +62,27 @@ const ArtistsDetails = () => {
   const artistImage = artistData.profile_image || artistData.image_path || artistData.cover_image_path || artistData.image || artist?.image || artist?.image_path || artist?.cover_image_path || 'https://picsum.photos/400/400?random=artist';
 
   const listenersCount = artistData.total_followers
-    ? `${formatPlayCount(artistData.total_followers)} monthly listeners`
+    ? `${formatPlayCount(artistData.total_followers)} ${t('monthlyListeners')}`
     : artistData.total_streams && artistData.total_streams > 0
-      ? `${formatPlayCount(artistData.total_streams)} monthly listeners`
+      ? `${formatPlayCount(artistData.total_streams)} ${t('monthlyListeners')}`
       : artist?.total_followers
-        ? `${formatPlayCount(artist.total_followers)} monthly listeners`
-        : '1.3Cr monthly listeners';
+        ? `${formatPlayCount(artist.total_followers)} ${t('monthlyListeners')}`
+        : `1.3Cr ${t('monthlyListeners')}`;
 
-  const [isFollowing, setIsFollowing] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(!!(artist?.is_followed || artist?.raw?.is_followed));
   const [isShuffle, setIsShuffle] = useState(false);
   const [activeTab, setActiveTab] = useState('Music');
 
   // Sync isFollowing state from API if available
   React.useEffect(() => {
     if (artistData.is_followed !== undefined) {
-      setIsFollowing(artistData.is_followed);
+      setIsFollowing(!!artistData.is_followed);
+    } else if (artist?.is_followed !== undefined) {
+      setIsFollowing(!!artist.is_followed);
+    } else if (artist?.raw?.is_followed !== undefined) {
+      setIsFollowing(!!artist.raw.is_followed);
     }
-  }, [artistData.is_followed]);
+  }, [artistData.is_followed, artist?.is_followed, artist?.raw?.is_followed]);
 
   // Collect and filter songs matching the artist
   const artistSongs = React.useMemo(() => {
@@ -193,7 +199,7 @@ const ArtistsDetails = () => {
               <View style={styles.badgeCircle}>
                 <Text style={styles.badgeCheck}>✓</Text>
               </View>
-              <Text style={styles.verifiedText}>Verified Artist</Text>
+              <Text style={styles.verifiedText}>{t('verifiedArtist')}</Text>
             </View>
           </View>
         </View>
@@ -227,7 +233,12 @@ const ArtistsDetails = () => {
               styles.followButton,
               isFollowing && styles.followingButtonActive,
             ]}
-            onPress={() => setIsFollowing(!isFollowing)}
+            onPress={() => {
+              setIsFollowing(!isFollowing);
+              if (artistId) {
+                dispatch(toggleArtistFollowRequest(artistId));
+              }
+            }}
             activeOpacity={0.7}
           >
             <Text
@@ -236,7 +247,7 @@ const ArtistsDetails = () => {
                 isFollowing && styles.followingButtonTextActive,
               ]}
             >
-              {isFollowing ? 'Following' : 'Follow'}
+              {isFollowing ? t('following') : t('follow')}
             </Text>
           </TouchableOpacity>
 
@@ -265,7 +276,7 @@ const ArtistsDetails = () => {
             style={styles.greenPlayButton}
             onPress={() => {
               if (artistSongs.length > 0) {
-                navigation.navigate('MusicPlay', { track: artistSongs[0] });
+                navigation.navigate('MusicPlay', { track: artistSongs[0], fromScreen: 'ArtistsDetails' });
               }
             }}
             activeOpacity={0.8}
@@ -299,7 +310,7 @@ const ArtistsDetails = () => {
                 activeTab === 'Music' && styles.tabTextActive,
               ]}
             >
-              Music
+              {t('music')}
             </Text>
             {activeTab === 'Music' && <View style={styles.tabIndicator} />}
           </TouchableOpacity>
@@ -324,7 +335,7 @@ const ArtistsDetails = () => {
         {/* Popular Tracks Section */}
         {activeTab === 'Music' && (
           <View style={styles.popularSection}>
-            <Text style={styles.popularTitle}>Popular</Text>
+            <Text style={styles.popularTitle}>{t('popular')}</Text>
 
             <View style={styles.tracksList}>
               {artistSongs.map((song: any, index: any) => {
@@ -337,7 +348,7 @@ const ArtistsDetails = () => {
                     key={song.id || index}
                     style={styles.trackRow}
                     activeOpacity={0.7}
-                    onPress={() => navigation.navigate('MusicPlay', { track: song })}
+                    onPress={() => navigation.navigate('MusicPlay', { track: song, fromScreen: 'ArtistsDetails' })}
                   >
                     {/* Track Number */}
                     <Text style={styles.trackIndex}>{trackNum}</Text>

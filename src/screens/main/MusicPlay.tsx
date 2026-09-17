@@ -1,26 +1,39 @@
-import { StyleSheet, Text, View, Image, StatusBar, TouchableOpacity, Dimensions, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, Image, StatusBar, TouchableOpacity, Dimensions, ScrollView, PanResponder } from 'react-native';
 import React, { useState, useEffect, useRef } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useDispatch, useSelector } from 'react-redux';
 import { COLORS, FONTS, ICONS } from '../../utils/constants';
 import { ms } from '../../utils/helper/metric';
-import TrackPlayer, { Capability, State, usePlaybackState, useProgress, AppKilledPlaybackBehavior } from 'react-native-track-player';
+import TrackPlayer, { Capability, State, usePlaybackState, useProgress, AppKilledPlaybackBehavior, useActiveTrack, Event, useTrackPlayerEvents, RepeatMode } from 'react-native-track-player';
+import { useTranslation } from '../../utils/hooks/useTranslation';
+import { toggleSongLikeRequest, toggleArtistFollowRequest } from '../../redux/reducer/MainReducer';
+import { getPlayerQueueRequest } from '../../redux/reducer/SongReducer';
+import Loader from '../../utils/helper/Loader';
 
 const MusicPlay = () => {
     const insets = useSafeAreaInsets();
     const navigation = useNavigation<any>();
     const route = useRoute<any>();
+    const dispatch = useDispatch();
+    const { t } = useTranslation();
 
-    const track = route.params?.track;
+    const [track, setTrack] = useState(route.params?.track);
+
+    useEffect(() => {
+        if (route.params?.track) {
+            setTrack(route.params.track);
+        }
+    }, [route.params?.track]);
     const trackTitle = track?.title || 'Blinding Lights';
 
     const artistName = track?.featured_artists
         ? [track.featured_artists, track.other_artists].filter(Boolean).join(', ')
         : track?.subtitle ||
-          (track?.artist && typeof track.artist === 'object' ? track.artist.name : track?.artist) ||
-          track?.other_artists ||
-          'The Weeknd';
+        (track?.artist && typeof track.artist === 'object' ? track.artist.name : track?.artist) ||
+        track?.other_artists ||
+        'The Weeknd';
 
     const albumArt = track?.cover_image_path || track?.image || track?.artwork || 'https://picsum.photos/400/400?random=109';
 
@@ -50,7 +63,7 @@ const MusicPlay = () => {
     // Track Player hooks for real progress and state
     const playbackState = usePlaybackState();
     const stateVal = typeof playbackState === 'object' && playbackState !== null ? (playbackState as any).state : playbackState;
-    const [isTransitioning, setIsTransitioning] = useState(false);
+    const [isTransitioning, setIsTransitioning] = useState(true);
     const transitionTimeoutRef = useRef<any>(null);
     const isPlaying = stateVal === State.Playing || stateVal === 'playing' || stateVal === 'buffering' || stateVal === State.Buffering || isTransitioning;
 
@@ -76,12 +89,98 @@ const MusicPlay = () => {
     const totalDuration = progressData.duration || parseDuration(track?.duration || track?.total_duration);
 
     const [isPlayerReady, setIsPlayerReady] = useState(false);
-    const [isLiked, setIsLiked] = useState(false);
+    const [isLiked, setIsLiked] = useState(!!(track?.is_liked || track?.raw?.is_liked));
+    const [isArtistFollowing, setIsArtistFollowing] = useState(!!(track?.artist?.is_followed || track?.artist?.raw?.is_followed));
     const [showLyrics, setShowLyrics] = useState(false);
     const [expandLyrics, setExpandLyrics] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragProgress, setDragProgress] = useState(0);
+    const lastSeekPositionRef = useRef<number | null>(null);
+    const lastSeekTimeRef = useRef<number>(0);
+
+    const pageRef = useRef(0);
+    const [fetchingNext, setFetchingNext] = useState(false);
+    const playerQueueRes = useSelector((state: any) => state.SongReducer?.playerQueueRes);
+    const isSongLoading = useSelector((state: any) => state.SongReducer?.isSongLoading);
+
+    const [isShuffle, setIsShuffle] = useState(false);
+    const [repeatMode, setRepeatMode] = useState(RepeatMode.Off);
+
+    const toggleShuffle = () => {
+        setIsShuffle(!isShuffle);
+    };
+
+    const toggleRepeat = async () => {
+        const nextMode = repeatMode === RepeatMode.Off ? RepeatMode.Track : RepeatMode.Off;
+        setRepeatMode(nextMode);
+        try {
+            await TrackPlayer.setRepeatMode(nextMode);
+        } catch (error) {
+            console.error("Set Repeat Mode Error", error);
+        }
+    };
+
+    const fetchNextSongs = () => {
+        const nextPage = pageRef.current + 1;
+        pageRef.current = nextPage;
+
+        const fromScreen = route.params?.fromScreen || '';
+        const typeIdParam = route.params?.type_id || '';
+        const keywordParam = route.params?.keyword || '';
+
+        let sourceType = track?.source_type || 'album';
+        if (fromScreen === 'Home') {
+            sourceType = typeIdParam || sourceType;
+        } else if (fromScreen) {
+            sourceType = fromScreen;
+        }
+
+        let keywordValue = track?.keyword || '';
+        if (fromScreen === 'Search') {
+            keywordValue = keywordParam;
+        } else if (fromScreen) {
+            keywordValue = '';
+        }
+
+        dispatch(getPlayerQueueRequest({
+            source_type: sourceType,
+            source_id: track?.source_id || '',
+            keyword: keywordValue,
+            page: nextPage,
+            per_page: 5,
+            last_played_song_id: track?.id || ''
+        }));
+    };
+
+    const handleSkipNextRef = useRef<any>(null);
+
+    useTrackPlayerEvents([Event.PlaybackActiveTrackChanged, Event.PlaybackQueueEnded], async (event) => {
+        if (event.type === Event.PlaybackActiveTrackChanged && event.index != null) {
+            const queue = await TrackPlayer.getQueue();
+            const activeTrack = await TrackPlayer.getTrack(event.index);
+            if (activeTrack?.track) {
+                setTrack(activeTrack.track);
+            }
+        } else if (event.type === Event.PlaybackQueueEnded) {
+            if (handleSkipNextRef.current) {
+                handleSkipNextRef.current();
+            }
+        }
+    });
+
+    useEffect(() => {
+        setIsLiked(!!(track?.is_liked || track?.raw?.is_liked));
+        setIsArtistFollowing(!!(track?.artist?.is_followed || track?.artist?.raw?.is_followed));
+    }, [track]);
+
+    const isSeeking = lastSeekPositionRef.current !== null &&
+        Math.abs(progress - lastSeekPositionRef.current) > 1.5 &&
+        (Date.now() - lastSeekTimeRef.current < 1000);
+
+    const currentProgress = isDragging ? dragProgress : (isSeeking && lastSeekPositionRef.current !== null ? lastSeekPositionRef.current : progress);
 
     const currentLineIndex = lyricsLines.length > 0 && totalDuration > 0
-        ? Math.min(Math.floor((progress / totalDuration) * lyricsLines.length), lyricsLines.length - 1)
+        ? Math.min(Math.floor((currentProgress / totalDuration) * lyricsLines.length), lyricsLines.length - 1)
         : 0;
 
     // Determine which lines of lyrics to display in the card (and their original indices)
@@ -103,42 +202,26 @@ const MusicPlay = () => {
     // Setup TrackPlayer once on component mount
     useEffect(() => {
         const setup = async () => {
+            let isSetup = false;
             try {
-                // Initialize player
-                await TrackPlayer.setupPlayer({});
-                await TrackPlayer.updateOptions({
-                    android: {
-                        appKilledPlaybackBehavior: AppKilledPlaybackBehavior.StopPlaybackAndRemoveNotification
-                    },
-                    // Media controls capabilities
-                    capabilities: [
-                        Capability.Play,
-                        Capability.Pause,
-                        Capability.SkipToNext,
-                        Capability.SkipToPrevious,
-                        Capability.SeekTo,
-                        Capability.Stop,
-                    ],
-                    // Capabilities that will be displayed in notification on android
-                    notificationCapabilities: [
-                        Capability.Play,
-                        Capability.Pause,
-                        Capability.SkipToNext,
-                        Capability.SkipToPrevious,
-                        Capability.Stop,
-                    ],
-                    // Compact capabilities in Android notification (collapsed view)
-                    compactCapabilities: [
-                        Capability.Play,
-                        Capability.Pause,
-                        Capability.Stop,
-                    ],
-                });
-                setIsPlayerReady(true);
-            } catch (error) {
-                // Player is already initialized
+                await TrackPlayer.getPlaybackState();
+                isSetup = true;
+            } catch (e) {
+                try {
+                    await TrackPlayer.setupPlayer({});
+                    isSetup = true;
+                } catch (error) {
+                    console.error("TrackPlayer setup error:", error);
+                }
+            }
+
+            if (isSetup) {
                 try {
                     await TrackPlayer.updateOptions({
+                        android: {
+                            appKilledPlaybackBehavior: AppKilledPlaybackBehavior.StopPlaybackAndRemoveNotification
+                        },
+                        // Media controls capabilities
                         capabilities: [
                             Capability.Play,
                             Capability.Pause,
@@ -147,6 +230,7 @@ const MusicPlay = () => {
                             Capability.SeekTo,
                             Capability.Stop,
                         ],
+                        // Capabilities that will be displayed in notification on android
                         notificationCapabilities: [
                             Capability.Play,
                             Capability.Pause,
@@ -154,6 +238,7 @@ const MusicPlay = () => {
                             Capability.SkipToPrevious,
                             Capability.Stop,
                         ],
+                        // Compact capabilities in Android notification (collapsed view)
                         compactCapabilities: [
                             Capability.Play,
                             Capability.Pause,
@@ -161,7 +246,7 @@ const MusicPlay = () => {
                         ],
                     });
                 } catch (optsError) {
-                    // Ignore options errors if player is already set up and configured
+                    // Ignore options errors if player is already configured
                 }
                 setIsPlayerReady(true);
             }
@@ -182,6 +267,7 @@ const MusicPlay = () => {
                         // Same track is already loaded, do not reload.
                         // Ensure it plays.
                         await TrackPlayer.play();
+                        setIsTransitioning(false);
                         return;
                     }
                 }
@@ -202,6 +288,7 @@ const MusicPlay = () => {
                     title: trackTitle,
                     artist: artistName,
                     artwork: albumArt,
+                    track: track,
                 });
                 await TrackPlayer.play();
                 setShowLyrics(false);
@@ -215,7 +302,45 @@ const MusicPlay = () => {
         };
 
         loadTrack();
-    }, [isPlayerReady, track]);
+    }, [isPlayerReady, route.params?.track]);
+
+    useEffect(() => {
+        const resultData = playerQueueRes?.data?.result || playerQueueRes?.data;
+        if (resultData?.length > 0) {
+            const addTracksToQueue = async () => {
+                const tracksToAdd = resultData.map((item: any) => {
+                    const itemAudioUrl = item.audio_file_path || item.url || 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+                    const itemTrackTitle = item.title || 'Unknown Title';
+                    const itemArtistName = item.featured_artists
+                        ? [item.featured_artists, item.other_artists].filter(Boolean).join(', ')
+                        : item.subtitle ||
+                        (item.artist && typeof item.artist === 'object' ? item.artist.name : item.artist) ||
+                        item.other_artists || 'Unknown Artist';
+                    const itemAlbumArt = item.cover_image_path || item.image || item.artwork || 'https://picsum.photos/400/400?random=109';
+
+                    return {
+                        id: item.id?.toString() || Math.random().toString(),
+                        url: itemAudioUrl,
+                        title: itemTrackTitle,
+                        artist: itemArtistName,
+                        artwork: itemAlbumArt,
+                        track: item
+                    };
+                });
+
+                const queue = await TrackPlayer.getQueue();
+                const newStartIndex = queue.length;
+                await TrackPlayer.add(tracksToAdd);
+
+                if (fetchingNext) {
+                    setFetchingNext(false);
+                    await TrackPlayer.skip(newStartIndex);
+                    await TrackPlayer.play();
+                }
+            };
+            addTracksToQueue();
+        }
+    }, [playerQueueRes]);
 
     const togglePlayback = async () => {
         if (transitionTimeoutRef.current) {
@@ -237,15 +362,108 @@ const MusicPlay = () => {
         return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
     };
 
-    const activePercent = totalDuration > 0 ? (progress / totalDuration) * 100 : 0;
+    const handleSkipNext = async () => {
+        try {
+            const queue = await TrackPlayer.getQueue();
+            const currentTrackIndex = await TrackPlayer?.getCurrentTrack();
 
-    const handleProgressBarPress = (event: any) => {
-        const { locationX } = event.nativeEvent;
-        const barWidth = Dimensions.get('window').width - ms(64);
-        const clickPercent = Math.max(0, Math.min(1, locationX / barWidth));
-        const newPosition = clickPercent * totalDuration;
-        TrackPlayer.seekTo(newPosition);
+            if (isShuffle && queue.length > 1) {
+                let randomIndex = Math.floor(Math.random() * queue.length);
+                if (randomIndex === currentTrackIndex) {
+                    randomIndex = (randomIndex + 1) % queue.length;
+                }
+                await TrackPlayer.skip(randomIndex);
+                return;
+            }
+
+            if (currentTrackIndex !== null && currentTrackIndex >= queue.length - 1) {
+                setFetchingNext(true);
+                fetchNextSongs();
+            } else {
+                await TrackPlayer.skipToNext();
+            }
+        } catch (error) {
+            console.error("Skip Next Error", error);
+        }
     };
+
+    useEffect(() => {
+        handleSkipNextRef.current = handleSkipNext;
+    });
+
+    const handleSkipPrevious = async () => {
+        try {
+            const queue = await TrackPlayer.getQueue();
+            const currentTrackIndex = await TrackPlayer?.getCurrentTrack();
+
+            if (isShuffle && queue.length > 1) {
+                let randomIndex = Math.floor(Math.random() * queue.length);
+                if (randomIndex === currentTrackIndex) {
+                    randomIndex = (randomIndex + 1) % queue.length;
+                }
+                await TrackPlayer.skip(randomIndex);
+                return;
+            }
+
+            if (currentTrackIndex !== null && currentTrackIndex > 0) {
+                await TrackPlayer.skipToPrevious();
+            } else {
+                setFetchingNext(true);
+                fetchNextSongs();
+            }
+        } catch (error) {
+            console.error("Skip Previous Error", error);
+        }
+    };
+
+    const activePercent = totalDuration > 0 ? (currentProgress / totalDuration) * 100 : 0;
+
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: () => true,
+            onPanResponderGrant: (evt) => {
+                setIsDragging(true);
+                if (totalDuration > 0) {
+                    const barWidth = Dimensions.get('window').width - ms(64);
+                    const touchX = evt.nativeEvent.pageX - ms(32);
+                    const clickPercent = Math.max(0, Math.min(1, touchX / barWidth));
+                    const newPos = clickPercent * totalDuration;
+                    setDragProgress(newPos);
+                }
+            },
+            onPanResponderMove: (evt) => {
+                if (totalDuration > 0) {
+                    const barWidth = Dimensions.get('window').width - ms(64);
+                    const touchX = evt.nativeEvent.pageX - ms(32);
+                    const clickPercent = Math.max(0, Math.min(1, touchX / barWidth));
+                    const newPos = clickPercent * totalDuration;
+                    setDragProgress(newPos);
+                }
+            },
+            onPanResponderRelease: async (evt) => {
+                if (totalDuration > 0) {
+                    const barWidth = Dimensions.get('window').width - ms(64);
+                    const touchX = evt.nativeEvent.pageX - ms(32);
+                    const clickPercent = Math.max(0, Math.min(1, touchX / barWidth));
+                    const newPos = clickPercent * totalDuration;
+
+                    lastSeekPositionRef.current = newPos;
+                    lastSeekTimeRef.current = Date.now();
+
+                    try {
+                        await TrackPlayer.seekTo(newPos);
+                    } catch (err) {
+                        console.error("Error seeking on release", err);
+                    }
+                }
+                setIsDragging(false);
+            },
+            onPanResponderTerminate: () => {
+                setIsDragging(false);
+            }
+        })
+    ).current;
 
     // Custom vector drawing for controls to avoid third-party icon dependencies
     const MenuIcon = () => (
@@ -299,7 +517,7 @@ const MusicPlay = () => {
         </View>
     );
 
-    // console.log('1234567890', route.params)
+    // console.log('1234567890', route.params?.track)
 
     return (
         <SafeAreaView style={styles.container}>
@@ -308,7 +526,8 @@ const MusicPlay = () => {
                 backgroundColor="transparent"
                 translucent={true}
             />
-            <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+            <Loader visible={isSongLoading} />
+            <ScrollView scrollEnabled={!isDragging} showsVerticalScrollIndicator={false} bounces={false}>
                 <View
                     style={{
                         height: Dimensions.get("window").height * 0.95,
@@ -341,7 +560,7 @@ const MusicPlay = () => {
                                 <Image source={ICONS.leftarrow} style={styles.backIcon} />
                             </TouchableOpacity>
 
-                            <Text style={styles.headerTitle}>Now Playing</Text>
+                            <Text style={styles.headerTitle}>{t('nowPlaying')}</Text>
 
                             <TouchableOpacity
                                 onPress={() => navigation.navigate('Share')}
@@ -365,7 +584,7 @@ const MusicPlay = () => {
                                         contentContainerStyle={{ paddingBottom: ms(45) }}
                                         showsVerticalScrollIndicator={false}
                                     >
-                                        <Text style={{ fontFamily: FONTS.bold28, fontSize: ms(18), color: '#FFFFFF', marginBottom: ms(12), textAlign: 'center' }}>Lyrics</Text>
+                                        <Text style={{ fontFamily: FONTS.bold28, fontSize: ms(18), color: '#FFFFFF', marginBottom: ms(12), textAlign: 'center' }}>{t('lyrics')}</Text>
                                         <Text style={{ fontFamily: FONTS.regular24, fontSize: ms(14), color: 'rgba(255, 255, 255, 0.9)', lineHeight: ms(22), textAlign: 'center' }}>
                                             {track.lyrics}
                                         </Text>
@@ -387,7 +606,12 @@ const MusicPlay = () => {
                             </View>
 
                             <TouchableOpacity
-                                onPress={() => setIsLiked(!isLiked)}
+                                onPress={() => {
+                                    setIsLiked(!isLiked);
+                                    if (track?.id) {
+                                        dispatch(toggleSongLikeRequest(track.id));
+                                    }
+                                }}
                                 style={styles.likeButton}
                                 activeOpacity={0.7}
                             >
@@ -400,31 +624,30 @@ const MusicPlay = () => {
                         </View>
 
                         {/* Progress Slider (Interactive Seeker) */}
-                        <TouchableOpacity
-                            activeOpacity={1}
-                            onPress={handleProgressBarPress}
-                            style={{ ...styles.progressContainer, }}
+                        <View
+                            {...panResponder.panHandlers}
+                            style={styles.progressContainer}
                         >
                             <View style={styles.progressBarBackground}>
                                 <View style={[styles.progressBarActive, { width: `${activePercent}%` }]} />
                                 <View style={[styles.progressThumb, { left: `${activePercent}%` }]} />
                             </View>
                             <View style={styles.timeRow}>
-                                <Text style={styles.timeText}>{formatTime(progress)}</Text>
+                                <Text style={styles.timeText}>{formatTime(currentProgress)}</Text>
                                 <Text style={styles.timeText}>{formatTime(totalDuration)}</Text>
                             </View>
-                        </TouchableOpacity>
+                        </View>
 
                         {/* Playback Controls */}
                         <View style={{ ...styles.controlsRow, }}>
                             {/* Shuffle Button */}
-                            <TouchableOpacity style={styles.controlButton} activeOpacity={0.7}>
-                                <Image source={ICONS.shuffle} style={styles.Icon24} />
+                            <TouchableOpacity style={styles.controlButton} activeOpacity={0.7} onPress={toggleShuffle}>
+                                <Image source={ICONS.shuffle} style={[styles.Icon24, { tintColor: isShuffle ? COLORS.Primary || '#6337EB' : '#FFFFFF' }]} />
                             </TouchableOpacity>
 
                             {/* Skip Previous */}
                             <TouchableOpacity
-                                onPress={() => TrackPlayer.seekTo(0)}
+                                onPress={handleSkipPrevious}
                                 style={styles.controlButton}
                                 activeOpacity={0.7}
                             >
@@ -442,7 +665,7 @@ const MusicPlay = () => {
 
                             {/* Skip Next */}
                             <TouchableOpacity
-                                onPress={() => TrackPlayer.seekTo(0)}
+                                onPress={handleSkipNext}
                                 style={styles.controlButton}
                                 activeOpacity={0.7}
                             >
@@ -450,14 +673,15 @@ const MusicPlay = () => {
                             </TouchableOpacity>
 
                             {/* Repeat Button */}
-                            <TouchableOpacity style={styles.controlButton} activeOpacity={0.7}>
-                                <Image source={ICONS.loop} style={styles.Icon24} />
+                            <TouchableOpacity style={styles.controlButton} activeOpacity={0.7} onPress={toggleRepeat}>
+                                <Image source={ICONS.loop} style={[styles.Icon24, { tintColor: repeatMode === RepeatMode.Track ? COLORS.Primary || '#6337EB' : '#FFFFFF' }]} />
                             </TouchableOpacity>
                         </View>
 
                         {/* Footer Navigation bar */}
                         <View style={styles.footer}>
-                            <TouchableOpacity style={styles.footerButton} activeOpacity={0.7}>
+                            <View style={styles.footerButton} />
+                            {/* <TouchableOpacity style={styles.footerButton} activeOpacity={0.7}>
                                 <LibraryIcon />
                             </TouchableOpacity>
 
@@ -467,7 +691,7 @@ const MusicPlay = () => {
 
                             <TouchableOpacity style={styles.footerButton} activeOpacity={0.7}>
                                 <Text style={styles.globeIcon}>🌐</Text>
-                            </TouchableOpacity>
+                            </TouchableOpacity> */}
                         </View>
 
 
@@ -479,7 +703,7 @@ const MusicPlay = () => {
                 {/* Lyrics Preview Card */}
                 {lyricsLines.length > 0 && (
                     <View style={styles.lyricsCard}>
-                        <Text style={styles.lyricsCardHeader}>Lyrics preview</Text>
+                        <Text style={styles.lyricsCardHeader}>{t('lyricsPreview')}</Text>
                         <View style={styles.lyricsContent}>
                             {visibleLyrics.map((item) => (
                                 <Text
@@ -497,7 +721,7 @@ const MusicPlay = () => {
                                 activeOpacity={0.8}
                             >
                                 <Text style={styles.showLyricsButtonText}>
-                                    {expandLyrics ? 'Hide lyrics' : 'Show lyrics'}
+                                    {expandLyrics ? t('hideLyrics') : t('showLyrics')}
                                 </Text>
                             </TouchableOpacity>
                         )}
@@ -505,36 +729,54 @@ const MusicPlay = () => {
                 )}
 
                 {/* About the Artist Card */}
-                <View style={styles.artistCard}>
+                <TouchableOpacity style={styles.artistCard} onPress={() => navigation.navigate('ArtistsDetails', { artist: track?.artist })}>
                     <View style={styles.artistImageContainer}>
                         <Image
                             source={{ uri: track?.artist?.cover_image_path || track?.artist?.image_path || 'https://picsum.photos/400/400?random=artist' }}
                             style={styles.artistCardImage}
                         />
-                        <Text style={styles.artistCardBadge}>About the artist</Text>
+                        <Text style={styles.artistCardBadge}>{t('aboutTheArtist')}</Text>
                     </View>
                     <View style={styles.artistCardInfo}>
                         <View style={styles.artistNameRow}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 1, marginRight: ms(8) }}>
                                 <Text style={styles.artistCardName}>{track?.artist?.name || artistName}</Text>
                                 <View style={styles.verifiedBadge}>
                                     <Text style={styles.verifiedBadgeText}>✓</Text>
                                 </View>
                             </View>
-                            <TouchableOpacity style={styles.followButton} activeOpacity={0.8}>
-                                <Text style={styles.followButtonText}>Follow</Text>
+                            <TouchableOpacity
+                                style={[
+                                    styles.followButton,
+                                    isArtistFollowing && styles.followingButtonActive
+                                ]}
+                                onPress={() => {
+                                    setIsArtistFollowing(!isArtistFollowing);
+                                    const artistId = track?.artist?.id || track?.artist_id;
+                                    if (artistId) {
+                                        dispatch(toggleArtistFollowRequest(artistId));
+                                    }
+                                }}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={[
+                                    styles.followButtonText,
+                                    isArtistFollowing && styles.followingButtonTextActive
+                                ]}>
+                                    {isArtistFollowing ? t('following') : t('follow')}
+                                </Text>
                             </TouchableOpacity>
                         </View>
                         <Text style={styles.monthlyListeners}>
-                            {track?.artist?.total_followers !== undefined 
-                                ? `${track.artist.total_followers} followers` 
-                                : '0 followers'}
+                            {track?.artist?.total_followers !== undefined
+                                ? `${track.artist.total_followers} ${t('followers').toLowerCase()}`
+                                : `0 ${t('followers').toLowerCase()}`}
                         </Text>
                         <Text style={styles.artistBio} numberOfLines={3}>
                             {track?.artist?.bio || "No biography available for this artist."}
                         </Text>
                     </View>
-                </View>
+                </TouchableOpacity>
             </ScrollView>
         </SafeAreaView>
     );
@@ -929,6 +1171,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        flexWrap: 'wrap',
+        rowGap: ms(10),
+        width: '100%',
     },
     artistCardName: {
         fontFamily: FONTS.bold28,
@@ -957,10 +1202,16 @@ const styles = StyleSheet.create({
         paddingHorizontal: ms(16),
         paddingVertical: ms(6),
     },
+    followingButtonActive: {
+        backgroundColor: '#FFFFFF',
+    },
     followButtonText: {
         fontFamily: FONTS.bold24,
         fontSize: ms(12),
         color: '#FFFFFF',
+    },
+    followingButtonTextActive: {
+        color: '#000000',
     },
     monthlyListeners: {
         fontFamily: FONTS.regular24,

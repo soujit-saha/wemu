@@ -20,6 +20,7 @@ import {
   deleteAccountSuccess,
   deleteAccountFailure,
   setOnboardingSeen,
+  setLanguage,
 } from '../reducer/AuthReducer';
 // import { getApi, postApi } from '../../utils/helper/ApiRequest';
 import { ApiHeaders, ApiResponse } from '../types';
@@ -50,8 +51,17 @@ export function* getTokenSaga(): Generator<any, void, any> {
       AsyncStorage.getItem,
       'HAS_SEEN_ONBOARDING',
     );
+    const appLanguage: string | null = yield call(
+      AsyncStorage.getItem,
+      'app_language',
+    );
 
     yield put(setOnboardingSeen(onboardingSeen === 'true'));
+    if (appLanguage === 'en' || appLanguage === 'es') {
+      yield put(setLanguage(appLanguage));
+    } else {
+      yield put(setLanguage('en'));
+    }
 
     if (response != null) {
       const tokenData = JSON.parse(response);

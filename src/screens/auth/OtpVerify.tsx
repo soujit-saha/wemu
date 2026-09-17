@@ -18,6 +18,7 @@ import { COLORS, FONTS, ICONS } from '../../utils/constants';
 import { ms } from '../../utils/helper/metric';
 import { forgotPasswordRequest } from '../../redux/reducer/AuthReducer';
 import ToastAlert from '../../utils/helper/Toast';
+import { useTranslation } from '../../utils/hooks/useTranslation';
 
 const OtpVerify = () => {
   const navigation = useNavigation<any>();
@@ -25,6 +26,7 @@ const OtpVerify = () => {
   const dispatch = useDispatch();
   const [code, setCode] = useState(['', '', '', '']);
   const [timer, setTimer] = useState(30);
+  const { t } = useTranslation();
 
   const { isReqLoading, ForgotPasswordRes } = useSelector((state: any) => state.AuthReducer);
 
@@ -47,17 +49,17 @@ const OtpVerify = () => {
   const handleVerify = () => {
     const fullCode = code.join('');
     if (fullCode.length < 4 || isNaN(Number(fullCode))) {
-      ToastAlert('Please enter a valid 4-digit verification code');
+      ToastAlert(t('pleaseEnterOtp4'));
       return;
     }
 
     if (!otpFromResponse) {
-      ToastAlert('Verification code not found. Please resend the code.');
+      ToastAlert(t('otpNotFound'));
       return;
     }
 
     if (String(otpFromResponse) !== String(fullCode)) {
-      ToastAlert('Invalid verification code. Please try again.');
+      ToastAlert(t('invalidOtp'));
       return;
     }
 
@@ -135,15 +137,15 @@ const OtpVerify = () => {
 
           {/* Title and Subtitle */}
           <View style={styles.titleContainer}>
-            <Text style={styles.title}>Verify Your Email</Text>
+            <Text style={styles.title}>{t('verifyEmailTitle')}</Text>
             <Text style={styles.subtitle}>
-              Enter the 4-digit code sent to{'\n'}
+              {t('verifyEmailSub')}{'\n'}
               <Text style={styles.emailText}>{email}</Text>
             </Text>
             {otpFromResponse ? (
               <View style={styles.otpBanner}>
                 <Text style={styles.otpBannerText}>
-                  Your OTP code is: <Text style={styles.otpBannerCode}>{otpFromResponse}</Text>
+                  {t('yourOtpIs')} <Text style={styles.otpBannerCode}>{otpFromResponse}</Text>
                 </Text>
               </View>
             ) : null}
@@ -174,11 +176,11 @@ const OtpVerify = () => {
           <View style={styles.timerContainer}>
             {timer > 0 ? (
               <Text style={styles.timerText}>
-                Resend code in <Text style={styles.timerHighlight}>00:{timer < 10 ? '0' : ''}{timer}</Text>
+                {t('resendCodeIn')}<Text style={styles.timerHighlight}>00:{timer < 10 ? '0' : ''}{timer}</Text>
               </Text>
             ) : (
               <TouchableOpacity onPress={handleResend} activeOpacity={0.7} disabled={isReqLoading}>
-                <Text style={styles.resendLink}>Resend Code</Text>
+                <Text style={styles.resendLink}>{t('resendCode')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -195,7 +197,7 @@ const OtpVerify = () => {
             {isReqLoading ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Text style={styles.primaryButtonText}>Verify</Text>
+              <Text style={styles.primaryButtonText}>{t('verify')}</Text>
             )}
           </TouchableOpacity>
         </View>

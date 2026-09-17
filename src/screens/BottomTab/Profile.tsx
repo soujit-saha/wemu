@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -8,6 +8,8 @@ import {
   StatusBar,
   ScrollView,
   ActivityIndicator,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -17,12 +19,15 @@ import { COLORS, FONTS, ICONS } from '../../utils/constants';
 import { ms } from '../../utils/helper/metric';
 import { logoutRequest } from '../../redux/reducer/AuthReducer';
 import { myProfileRequest } from '../../redux/reducer/MainReducer';
+import { useTranslation } from '../../utils/hooks/useTranslation';
 
 const Profile = () => {
   const dispatch = useDispatch();
   const navigation = useNavigation<any>();
   const { isReqLoading } = useSelector((state: any) => state.AuthReducer);
   const { myProfileRes } = useSelector((state: any) => state.MainReducer);
+  const { t, lang, changeLanguage } = useTranslation();
+  const [showLangModal, setShowLangModal] = useState(false);
 
   React.useEffect(() => {
     dispatch(myProfileRequest({}));
@@ -30,11 +35,16 @@ const Profile = () => {
 
   const displayName = myProfileRes?.data?.name || '';
   const displayEmail = myProfileRes?.data?.email || '';
-  const displayAvatar = myProfileRes?.data?.profile_image || "";
+  const displayAvatar = myProfileRes?.data?.profile_image || '';
   // 'https://randomuser.me/api/portraits/men/32.jpg';
 
   const handleLogout = () => {
     dispatch(logoutRequest({ showMsg: true }));
+  };
+
+  const selectLanguage = (selectedLang: 'en' | 'es') => {
+    changeLanguage(selectedLang);
+    setShowLangModal(false);
   };
 
   // Vector Drawing for Edit Profile Icon (User)
@@ -57,10 +67,13 @@ const Profile = () => {
   const GearIcon = ({ color }: { color: string }) => (
     <View style={styles.gearIconContainer}>
       <View style={[styles.gearInner, { borderColor: color }]} />
-      {[0, 45, 90, 135].map((angle) => (
+      {[0, 45, 90, 135].map(angle => (
         <View
           key={angle}
-          style={[styles.gearTeeth, { backgroundColor: color, transform: [{ rotate: `${angle}deg` }] }]}
+          style={[
+            styles.gearTeeth,
+            { backgroundColor: color, transform: [{ rotate: `${angle}deg` }] },
+          ]}
         />
       ))}
       <View style={styles.gearCenter} />
@@ -74,14 +87,25 @@ const Profile = () => {
     </View>
   );
 
+  // Globe Icon
+  const GlobeIcon = ({ color }: { color: string }) => (
+    <View style={styles.helpIconContainer}>
+      <Text style={[styles.helpTextChar, { color, fontSize: ms(14.5) }]}>
+        🌐
+      </Text>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Modern Left-Aligned Title Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Profile</Text>
+          <Text style={styles.headerTitle}>{t('profile')}</Text>
         </View>
 
         {/* Profile Avatar section with Gradient Ring */}
@@ -95,29 +119,35 @@ const Profile = () => {
             <View style={styles.avatarImageWrapper}>
               <Image
                 source={displayAvatar ? { uri: displayAvatar } : ICONS.people}
-                style={displayAvatar ? styles.avatarImage : [styles.avatarImage, { tintColor: COLORS.Primary }]}
+                style={
+                  displayAvatar
+                    ? styles.avatarImage
+                    : [styles.avatarImage, { tintColor: COLORS.Primary }]
+                }
               />
             </View>
           </LinearGradient>
           <Text style={styles.profileName}>{displayName}</Text>
-          {displayEmail ? <Text style={styles.profileHandle}>{displayEmail}</Text> : null}
+          {displayEmail ? (
+            <Text style={styles.profileHandle}>{displayEmail}</Text>
+          ) : null}
         </View>
 
         {/* Stats Row */}
         <View style={styles.statsRow}>
           <View style={styles.statColumn}>
-            <Text style={styles.statNumber}>0</Text>
-            <Text style={styles.statLabel}>Playlists</Text>
+            <Text style={styles.statNumber}>{myProfileRes?.data?.playlists_count}</Text>
+            <Text style={styles.statLabel}>{t('playlists')}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statColumn}>
-            <Text style={styles.statNumber}>0</Text>
-            <Text style={styles.statLabel}>Following</Text>
+            <Text style={styles.statNumber}>{myProfileRes?.data?.following_count}</Text>
+            <Text style={styles.statLabel}>{t('following')}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statColumn}>
-            <Text style={styles.statNumber}>0</Text>
-            <Text style={styles.statLabel}>Followers</Text>
+            <Text style={styles.statNumber}>{myProfileRes?.data?.followers_count}</Text>
+            <Text style={styles.statLabel}>{t('followers')}</Text>
           </View>
         </View>
 
@@ -130,45 +160,96 @@ const Profile = () => {
             onPress={() => navigation.navigate('EditProfile')}
           >
             <View style={styles.optionLeft}>
-              <View style={[styles.iconBadge, { backgroundColor: 'rgba(99, 55, 235, 0.08)' }]}>
+              <View
+                style={[
+                  styles.iconBadge,
+                  { backgroundColor: 'rgba(99, 55, 235, 0.08)' },
+                ]}
+              >
                 <UserIcon color={COLORS.Primary || '#6337EB'} />
               </View>
-              <Text style={styles.optionText}>Edit Profile</Text>
+              <Text style={styles.optionText}>{t('editProfile')}</Text>
             </View>
             <Text style={styles.chevron}>›</Text>
           </TouchableOpacity>
 
           {/* Account */}
-          <TouchableOpacity style={styles.optionItem} activeOpacity={0.7}>
+          {/* <TouchableOpacity style={styles.optionItem} activeOpacity={0.7}>
             <View style={styles.optionLeft}>
               <View style={[styles.iconBadge, { backgroundColor: 'rgba(52, 168, 83, 0.08)' }]}>
                 <ShieldIcon color="#34A853" />
               </View>
-              <Text style={styles.optionText}>Account Security</Text>
+              <Text style={styles.optionText}>{t('accountSecurity')}</Text>
             </View>
             <Text style={styles.chevron}>›</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           {/* Settings */}
-          <TouchableOpacity style={styles.optionItem} activeOpacity={0.7}>
+          {/* <TouchableOpacity style={styles.optionItem} activeOpacity={0.7}>
             <View style={styles.optionLeft}>
-              <View style={[styles.iconBadge, { backgroundColor: 'rgba(18, 147, 237, 0.08)' }]}>
+              <View
+                style={[
+                  styles.iconBadge,
+                  { backgroundColor: 'rgba(18, 147, 237, 0.08)' },
+                ]}
+              >
                 <GearIcon color="#1293ED" />
               </View>
-              <Text style={styles.optionText}>Settings</Text>
+              <Text style={styles.optionText}>{t('settings')}</Text>
+            </View>
+            <Text style={styles.chevron}>›</Text>
+          </TouchableOpacity> */}
+
+          {/* Help & Support */}
+          <TouchableOpacity
+            style={styles.optionItem}
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate('HelpSupport')}
+          >
+            <View style={styles.optionLeft}>
+              <View
+                style={[
+                  styles.iconBadge,
+                  { backgroundColor: 'rgba(251, 188, 4, 0.08)' },
+                ]}
+              >
+                <HelpIcon color="#FBBC04" />
+              </View>
+              <Text style={styles.optionText}>{t('helpSupport')}</Text>
             </View>
             <Text style={styles.chevron}>›</Text>
           </TouchableOpacity>
 
-          {/* Help & Support */}
-          <TouchableOpacity style={styles.optionItem} activeOpacity={0.7}>
+          {/* Language Selection Setting */}
+          <TouchableOpacity
+            style={styles.optionItem}
+            activeOpacity={0.7}
+            onPress={() => setShowLangModal(true)}
+          >
             <View style={styles.optionLeft}>
-              <View style={[styles.iconBadge, { backgroundColor: 'rgba(251, 188, 4, 0.08)' }]}>
-                <HelpIcon color="#FBBC04" />
+              <View
+                style={[
+                  styles.iconBadge,
+                  { backgroundColor: 'rgba(99, 55, 235, 0.08)' },
+                ]}
+              >
+                <GlobeIcon color={COLORS.Primary || '#6337EB'} />
               </View>
-              <Text style={styles.optionText}>Help & Support</Text>
+              <Text style={styles.optionText}>{t('language')}</Text>
             </View>
-            <Text style={styles.chevron}>›</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text
+                style={{
+                  marginRight: ms(8),
+                  color: '#6B7280',
+                  fontSize: ms(13),
+                  fontFamily: FONTS.regular24,
+                }}
+              >
+                {lang === 'en' ? 'English' : 'Español'}
+              </Text>
+              <Text style={styles.chevron}>›</Text>
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -182,13 +263,67 @@ const Profile = () => {
           {isReqLoading ? (
             <ActivityIndicator size="small" color="#EF4444" />
           ) : (
-            <Text style={styles.logoutButtonText}>Log Out</Text>
+            <Text style={styles.logoutButtonText}>{t('logOut')}</Text>
           )}
         </TouchableOpacity>
 
         <View style={{ height: ms(120) }} />
-
       </ScrollView>
+
+      {/* Language Picker Modal */}
+      <Modal
+        visible={showLangModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowLangModal(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setShowLangModal(false)}
+        >
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>{t('selectLanguage')}</Text>
+
+            <TouchableOpacity
+              style={[
+                styles.modalOption,
+                lang === 'en' && styles.modalOptionSelected,
+              ]}
+              onPress={() => selectLanguage('en')}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.modalOptionText,
+                  lang === 'en' && styles.modalOptionTextSelected,
+                ]}
+              >
+                {t('english')}
+              </Text>
+              {lang === 'en' && <Text style={styles.checkmark}>✓</Text>}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.modalOption,
+                lang === 'es' && styles.modalOptionSelected,
+              ]}
+              onPress={() => selectLanguage('es')}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.modalOptionText,
+                  lang === 'es' && styles.modalOptionTextSelected,
+                ]}
+              >
+                {t('spanish')}
+              </Text>
+              {lang === 'es' && <Text style={styles.checkmark}>✓</Text>}
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -271,6 +406,7 @@ const styles = StyleSheet.create({
     marginBottom: ms(28),
     borderWidth: ms(1),
     borderColor: '#F3F4F6',
+    paddingHorizontal: ms(4),
   },
   statColumn: {
     alignItems: 'center',
@@ -436,5 +572,49 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.bold24,
     fontSize: ms(13),
     includeFontPadding: false,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'flex-end',
+  },
+  modalContainer: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: ms(24),
+    borderTopRightRadius: ms(24),
+    paddingHorizontal: ms(24),
+    paddingTop: ms(24),
+    paddingBottom: ms(40),
+  },
+  modalTitle: {
+    fontFamily: FONTS.bold28,
+    fontSize: ms(20),
+    color: '#111827',
+    marginBottom: ms(20),
+  },
+  modalOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: ms(16),
+    borderBottomWidth: ms(1),
+    borderBottomColor: '#F3F4F6',
+  },
+  modalOptionSelected: {
+    borderBottomColor: '#EEF2FF',
+  },
+  modalOptionText: {
+    fontFamily: FONTS.medium24,
+    fontSize: ms(16),
+    color: '#4B5563',
+  },
+  modalOptionTextSelected: {
+    color: '#6337EB',
+    fontFamily: FONTS.semiBold24,
+  },
+  checkmark: {
+    fontSize: ms(18),
+    color: '#6337EB',
+    fontWeight: 'bold',
   },
 });

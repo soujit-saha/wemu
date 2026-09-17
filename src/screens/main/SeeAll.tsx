@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -7,7 +7,9 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
+  FlatList,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -17,6 +19,7 @@ import { ms } from '../../utils/helper/metric';
 import FloatingPlayer from '../../component/FloatingPlayer';
 import Loader from '../../utils/helper/Loader';
 import { getSectionDetailsRequest } from '../../redux/reducer/SubscriptionReducer';
+import { useTranslation } from '../../utils/hooks/useTranslation';
 
 const { width } = Dimensions.get('window');
 
@@ -69,12 +72,21 @@ const SeeAll = () => {
   const dispatch = useDispatch();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const { t } = useTranslation();
   const { type_id, title, type: routeType } = route.params || {};
+
+  const [page, setPage] = useState(1);
+  const [localItems, setLocalItems] = useState<any[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // Fetch section details from API
   useEffect(() => {
     if (type_id) {
-      dispatch(getSectionDetailsRequest({ type_id }));
+      setPage(1);
+      setLocalItems([]);
+      setHasMore(true);
+      dispatch(getSectionDetailsRequest({ type_id, page: 1, per_page: 15 }));
     }
   }, [dispatch, type_id]);
 
@@ -82,122 +94,103 @@ const SeeAll = () => {
     (state: any) => state.SubscriptionReducer
   );
 
-  const items = Array.isArray(sectionDetailsRes)
-    ? sectionDetailsRes
-    : (sectionDetailsRes?.data?.items || sectionDetailsRes?.items || []);
-  const type = routeType || '';
-  const titleText = title || 'See All';
+  useEffect(() => {
+    if (sectionDetailsRes) {
+      const items = Array.isArray(sectionDetailsRes)
+        ? sectionDetailsRes
+        : (sectionDetailsRes?.data?.items || sectionDetailsRes?.items || sectionDetailsRes?.data || []);
 
-  const mappedItems = items.map((item: any) => mapItem(item, type));
+      if (page === 1) {
+        setLocalItems(items);
+      } else {
+        if (items && items.length > 0) {
+          setLocalItems(prev => {
+            const newItems = items.filter((item: any) =>
+              !prev.some((p: any) => (p.id || p.uuid) === (item.id || item.uuid))
+            );
+            return [...prev, ...newItems];
+          });
 
-  const renderContent = () => {
-    if (isLoading) {
-      return null;
+          // if (items.length < 15) {
+          //   setHasMore(false);
+          // }
+        }
+        if (!items || items.length === 0) {
+          setHasMore(false);
+        }
+      }
+      setIsLoadingMore(false);
     }
+  }, [sectionDetailsRes]);
 
-    if (items.length === 0) {
-      return (
-        <View style={styles.centerContainer}>
-          <Text style={styles.noDataText}>No items found</Text>
-        </View>
-      );
+  // useEffect(() => {
+  //   if (!isLoading) {
+  //     setIsLoadingMore(false);
+  //   }
+  // }, [isLoading]);
+
+  const loadMore = () => {
+    if (!isLoading && !isLoadingMore && hasMore) {
+      const nextPage = page + 1;
+      setIsLoadingMore(true);
+      setPage(nextPage);
+      dispatch(getSectionDetailsRequest({ type_id, page: nextPage, per_page: 15 }));
     }
-
-    if (type === 'song') {
-      return (
-        <View style={styles.tracksContainer}>
-          {mappedItems.map((track: any) => (
-            <TouchableOpacity
-              key={track.id}
-              style={styles.trackRow}
-              activeOpacity={0.7}
-              onPress={() => navigation.navigate('MusicPlay', { track: track.raw || track })}
-            >
-              <Image source={{ uri: track.image }} style={styles.trackArt} />
-              <View style={styles.trackDetails}>
-                <Text style={styles.trackTitle} numberOfLines={1}>
-                  {track.title}
-                </Text>
-                <Text style={styles.trackArtist} numberOfLines={1}>
-                  {track.subtitle}
-                </Text>
-              </View>
-              {/* <TouchableOpacity style={styles.optionsButton} activeOpacity={0.7}>
-                <Text style={styles.optionsText}>•••</Text>
-              </TouchableOpacity> */}
-            </TouchableOpacity>
-          ))}
-        </View>
-      );
-    }
-
-    if (type === 'artist' || type === 'radio') {
-      const isArtist = type === 'artist';
-      return (
-        <View style={styles.gridContainer}>
-          {mappedItems.map((item: any) => (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.artistGridCard}
-              activeOpacity={0.8}
-              disabled={!isArtist}
-              onPress={
-                isArtist
-                  ? () => navigation.navigate('ArtistsDetails', { artist: item })
-                  : undefined
-              }
-            >
-              <Image source={{ uri: item.image }} style={styles.artistGridImage} />
-              <Text style={styles.artistGridName} numberOfLines={1}>
-                {item.title}
-              </Text>
-              {item.subtitle ? (
-                <Text style={styles.artistGridSubtitle} numberOfLines={1}>
-                  {item.subtitle}
-                </Text>
-              ) : null}
-            </TouchableOpacity>
-          ))}
-        </View>
-      );
-    }
-
-    if (type === 'playlist') {
-      return (
-        <View style={styles.playlistGridContainer}>
-          {mappedItems.map((item: any) => (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.playlistGridCard}
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate('PlayList', { playlist: item.raw || item })}
-            >
-              <Image source={{ uri: item.image }} style={styles.playlistGridImage} />
-              <Text style={styles.playlistGridTitle} numberOfLines={1}>
-                {item.title}
-              </Text>
-              {item.subtitle ? (
-                <Text style={styles.playlistGridSubtitle} numberOfLines={2}>
-                  {item.subtitle}
-                </Text>
-              ) : null}
-            </TouchableOpacity>
-          ))}
-        </View>
-      );
-    }
-
-    return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.noDataText}>Unsupported section type</Text>
-      </View>
-    );
   };
+
+  const type = routeType || '';
+  const titleText = title || t('seeAll');
+
+  const mappedItems = localItems.map((item: any) => mapItem(item, type));
+
+  const renderSongItem = ({ item: track }: any) => (
+    <TouchableOpacity
+      style={styles.trackRow}
+      activeOpacity={0.7}
+      onPress={() => navigation.navigate('MusicPlay', { track: track.raw || track, fromScreen: 'SeeAll', type_id: type_id })}
+    >
+      <Image source={{ uri: track.image }} style={styles.trackArt} />
+      <View style={styles.trackDetails}>
+        <Text style={styles.trackTitle} numberOfLines={1}>{track.title}</Text>
+        <Text style={styles.trackArtist} numberOfLines={1}>{track.subtitle}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+
+  const renderArtistItem = ({ item }: any) => (
+    <TouchableOpacity
+      style={styles.artistGridCard}
+      activeOpacity={0.8}
+      onPress={() => navigation.navigate('ArtistsDetails', { artist: item })}
+    >
+      <Image source={{ uri: item.image }} style={styles.artistGridImage} />
+      <Text style={styles.artistGridName} numberOfLines={1}>{item.title}</Text>
+      {item.subtitle ? (
+        <Text style={styles.artistGridSubtitle} numberOfLines={1}>{item.subtitle}</Text>
+      ) : null}
+    </TouchableOpacity>
+  );
+
+  const renderPlaylistItem = ({ item }: any) => (
+    <TouchableOpacity
+      style={styles.playlistGridCard}
+      activeOpacity={0.8}
+      onPress={() => navigation.navigate('PlayList', { playlist: item.raw || item, hideAddSong: true })}
+    >
+      <Image source={{ uri: item.image }} style={styles.playlistGridImage} />
+      <Text style={styles.playlistGridTitle} numberOfLines={1}>{item.title}</Text>
+      {item.subtitle ? (
+        <Text style={styles.playlistGridSubtitle} numberOfLines={2}>{item.subtitle}</Text>
+      ) : null}
+    </TouchableOpacity>
+  );
+
+  const numCols = type === 'artist' || type === 'radio' ? 3 : type === 'playlist' ? 2 : 1;
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      <Loader visible={isLoading} />
+      <Loader visible={isLoading && page === 1} />
 
       {/* Header */}
       <View style={styles.header}>
@@ -214,12 +207,38 @@ const SeeAll = () => {
         <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {renderContent()}
-      </ScrollView>
+      {isLoading && page === 1 ? null : (
+        <FlatList
+          data={mappedItems}
+          key={numCols}
+          numColumns={numCols}
+          keyExtractor={(item, index) => `${item.id}-${index}`}
+          renderItem={(props) => {
+            if (type === 'song') return renderSongItem(props);
+            if (type === 'artist' || type === 'radio') return renderArtistItem(props);
+            if (type === 'playlist') return renderPlaylistItem(props);
+            return null;
+          }}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          columnWrapperStyle={numCols > 1 ? { gap: ms(16) } : undefined}
+          ItemSeparatorComponent={numCols === 1 ? () => <View style={{ height: ms(16) }} /> : null}
+          ListEmptyComponent={
+            <View style={styles.centerContainer}>
+              <Text style={styles.noDataText}>{['song', 'artist', 'radio', 'playlist'].includes(type) ? t('noItemsFound') : t('unsupportedSection')}</Text>
+            </View>
+          }
+          ListFooterComponent={
+            mappedItems?.length > 0 && isLoadingMore ? (
+              <View style={{ paddingVertical: 20 }}>
+                <ActivityIndicator size="large" color="#111827" />
+              </View>
+            ) : <View style={{ height: ms(20) }} />
+          }
+        />
+      )}
 
       {/* Floating Mini Player */}
       <FloatingPlayer />

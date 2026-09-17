@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -7,38 +7,116 @@ import {
   StatusBar,
   TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  myPlaylistsRequest,
+  albumsRequest,
+  artistsRequest,
+} from '../../redux/reducer/SongReducer';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, FONTS, ICONS } from '../../utils/constants';
 import { ms } from '../../utils/helper/metric';
+import { useTranslation } from '../../utils/hooks/useTranslation';
 
-const ARTISTS = [
-  {
-    id: '1',
-    name: 'Darshan Raval',
-    image: 'https://picsum.photos/200/200?random=101',
-  },
-  {
-    id: '2',
-    name: 'Tulsi Kumar',
-    image: 'https://picsum.photos/200/200?random=102',
-  },
-  {
-    id: '3',
-    name: 'Badshah',
-    image: 'https://picsum.photos/200/200?random=103',
-  },
-  {
-    id: '4',
-    name: 'Arijit Singh',
-    image: 'https://picsum.photos/200/200?random=104',
-  },
-];
+import { TextInput, FlatList } from 'react-native';
 
 const Library = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
+  const { t } = useTranslation();
+  const dispatch = useDispatch();
+
+  const [activeTab, setActiveTab] = useState<
+    'playlists' | 'albums' | 'artists'
+  >('playlists');
+  const [keyword, setKeyword] = useState('');
+  const [page, setPage] = useState(1);
+  const [localData, setLocalData] = useState<any[]>([]);
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
+
+  const per_page = 15;
+
+  const { myPlaylistsRes, albumsRes, artistsRes, isLoading } = useSelector(
+    (state: any) => state.SongReducer,
+  );
+
+  const fetchData = (
+    pageNum: number,
+    searchKey: string,
+    currentTab: string,
+  ) => {
+    const payload = { page: pageNum, per_page, keyword: searchKey };
+    if (currentTab === 'playlists') dispatch(myPlaylistsRequest(payload));
+    else if (currentTab === 'albums') dispatch(albumsRequest(payload));
+    else if (currentTab === 'artists') dispatch(artistsRequest(payload));
+  };
+
+  const skipSearchEffect = React.useRef(true);
+
+  // When tab changes or screen comes into focus, reset everything and fetch
+  useFocusEffect(
+    useCallback(() => {
+      setPage(1);
+      skipSearchEffect.current = true;
+      setKeyword('');
+      setLocalData([]);
+      setIsSearchVisible(false);
+      fetchData(1, '', activeTab);
+    }, [activeTab, dispatch])
+  );
+
+  // Handle debounced search
+  useEffect(() => {
+    if (skipSearchEffect.current) {
+      skipSearchEffect.current = false;
+      return;
+    }
+    const delay = setTimeout(() => {
+      setPage(1);
+      setLocalData([]); // Clear previous results immediately on search
+      fetchData(1, keyword, activeTab);
+    }, 500);
+    return () => clearTimeout(delay);
+  }, [keyword]);
+
+  // Sync Redux response to localData for appending (pagination)
+  useFocusEffect(
+    useCallback(() => {
+      let newData: any[] = [];
+      if (activeTab === 'playlists')
+        newData = myPlaylistsRes?.data?.result || myPlaylistsRes?.data || [];
+      else if (activeTab === 'albums') newData = albumsRes?.data?.result || [];
+      else if (activeTab === 'artists')
+        newData = artistsRes?.data?.result || [];
+
+      if (!Array.isArray(newData)) newData = [];
+
+      if (page === 1) {
+        setLocalData(newData);
+      } else {
+        setLocalData(prev => {
+          const existingIds = new Set(prev.map(p => p.id));
+          const filtered = newData.filter(n => !existingIds.has(n.id));
+          return [...prev, ...filtered];
+        });
+      }
+    }, [myPlaylistsRes, albumsRes, artistsRes]),
+  );
+
+  const loadMore = () => {
+    if (
+      !isLoading &&
+      localData.length > 0 &&
+      localData.length % per_page === 0
+    ) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchData(nextPage, keyword, activeTab);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -47,14 +125,16 @@ const Library = () => {
       {/* Header Bar */}
       <View style={[styles.header, { marginTop: insets.top }]}>
         <View style={styles.headerLeft}>
-          {/* Green Circle with initials */}
-
-          <Text style={styles.headerTitle}>Your Library</Text>
+          <Text style={styles.headerTitle}>{t('yourLibrary')}</Text>
         </View>
 
         <View style={styles.headerRight}>
           {/* Search Icon */}
-          <TouchableOpacity activeOpacity={0.7} style={styles.iconButton}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            style={styles.iconButton}
+            onPress={() => setIsSearchVisible(!isSearchVisible)}
+          >
             <Image source={ICONS.search} style={styles.headerIcon} />
           </TouchableOpacity>
           {/* Add Icon */}
@@ -68,136 +148,222 @@ const Library = () => {
         </View>
       </View>
 
+      {/* Search Bar (Conditionally Visible) */}
+      {isSearchVisible && (
+        <View style={{ paddingHorizontal: ms(16), marginBottom: ms(8) }}>
+          <TextInput
+            style={{
+              height: ms(40),
+              backgroundColor: '#F3F4F6',
+              borderRadius: ms(20),
+              paddingHorizontal: ms(16),
+              fontFamily: FONTS.regular24,
+              fontSize: ms(14),
+              color: '#111827',
+            }}
+            placeholder={t('search')}
+            placeholderTextColor="#9CA3AF"
+            value={keyword}
+            onChangeText={setKeyword}
+          />
+        </View>
+      )}
+
       {/* Filter Tag scrollview */}
       <View style={styles.tagsContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tagsScroll}>
-          <TouchableOpacity style={styles.activeTag} activeOpacity={0.8}>
-            <Text style={styles.activeTagText}>All</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tagsScroll}
+        >
+          <TouchableOpacity
+            style={
+              activeTab === 'playlists' ? styles.activeTag : styles.inactiveTag
+            }
+            activeOpacity={0.8}
+            onPress={() => setActiveTab('playlists')}
+          >
+            <Text
+              style={
+                activeTab === 'playlists'
+                  ? styles.activeTagText
+                  : styles.inactiveTagText
+              }
+            >
+              {t('playlists')}
+            </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.inactiveTag} activeOpacity={0.8}>
-            <Text style={styles.inactiveTagText}>Playlists</Text>
+          <TouchableOpacity
+            style={
+              activeTab === 'albums' ? styles.activeTag : styles.inactiveTag
+            }
+            activeOpacity={0.8}
+            onPress={() => setActiveTab('albums')}
+          >
+            <Text
+              style={
+                activeTab === 'albums'
+                  ? styles.activeTagText
+                  : styles.inactiveTagText
+              }
+            >
+              {t('albums')}
+            </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.inactiveTag} activeOpacity={0.8}>
-            <Text style={styles.inactiveTagText}>Albums</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.inactiveTag} activeOpacity={0.8}>
-            <Text style={styles.inactiveTagText}>Artists</Text>
+          <TouchableOpacity
+            style={
+              activeTab === 'artists' ? styles.activeTag : styles.inactiveTag
+            }
+            activeOpacity={0.8}
+            onPress={() => setActiveTab('artists')}
+          >
+            <Text
+              style={
+                activeTab === 'artists'
+                  ? styles.activeTagText
+                  : styles.inactiveTagText
+              }
+            >
+              {t('artists')}
+            </Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
 
-      {/* Sorting & Layout Toggle Row */}
-      <View style={styles.sortRow}>
-        <TouchableOpacity style={styles.sortButton} activeOpacity={0.7}>
-          <Text style={styles.sortText}>⇅ Recents</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.layoutButton} activeOpacity={0.7}>
-          <View style={styles.gridIconContainer}>
-            <View style={styles.gridSquare} />
-            <View style={styles.gridSquare} />
-            <View style={styles.gridSquare} />
-            <View style={styles.gridSquare} />
-          </View>
-        </TouchableOpacity>
-      </View>
-
-      {/* Main List content */}
-      <ScrollView
-        contentContainerStyle={[styles.listScrollContent, { paddingBottom: insets.bottom + ms(90) }]}
+      <FlatList
+        data={localData}
+        keyExtractor={(item, index) => item.id?.toString() || index.toString()}
+        contentContainerStyle={[
+          styles.listScrollContent,
+          { paddingBottom: insets.bottom + ms(90) },
+        ]}
         showsVerticalScrollIndicator={false}
-      >
-        {/* Import Banner Callout */}
-        {/* <TouchableOpacity style={styles.importBanner} activeOpacity={0.85}>
-          <View style={styles.importBannerLeft}>
-            <View style={styles.importIconCircle}>
-              <Image
-                source={{ uri: 'https://img.icons8.com/material-outlined/60/000000/download.png' }}
-                style={styles.bannerDownloadIcon}
-              />
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
+        ListHeaderComponent={() => (
+          <View style={styles.sortRow}>
+            <TouchableOpacity style={styles.sortButton} activeOpacity={0.7}>
+              <Text style={styles.sortText}>⇅ {t('recents')}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        ListEmptyComponent={() =>
+          !isLoading ? (
+            <View style={{ alignItems: 'center', marginTop: ms(40) }}>
+              <Text
+                style={{
+                  color: '#6B7280',
+                  fontFamily: FONTS.medium24,
+                  fontSize: ms(14),
+                }}
+              >
+                No {activeTab} found.
+              </Text>
             </View>
-            <Text style={styles.importBannerText}>Import your music from{"\n"}other apps</Text>
-          </View>
-          <Text style={styles.chevronRight}>&gt;</Text>
-        </TouchableOpacity> */}
-
-        {/* Playlist item */}
-        <TouchableOpacity
-          style={styles.artistItem}
-          activeOpacity={0.7}
-          onPress={() => navigation.navigate('PlayList')}
-        >
-          <View style={[styles.artistImage, { backgroundColor: '#581C87', justifyContent: 'center', alignItems: 'center' }]}>
-            <Text style={{ fontSize: ms(22) }}>🎵</Text>
-          </View>
-          <View style={styles.artistDetails}>
-            <Text style={styles.artistName}>Chill Vibes</Text>
-            <Text style={styles.artistRole}>Playlist • 45 songs</Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* Album item */}
-        <TouchableOpacity
-          style={styles.artistItem}
-          activeOpacity={0.7}
-          onPress={() => navigation.navigate('Album')}
-        >
-          <Image
-            source={{ uri: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=600&auto=format&fit=crop' }}
-            style={styles.artistImage}
-          />
-          <View style={styles.artistDetails}>
-            <Text style={styles.artistName}>After Hours</Text>
-            <Text style={styles.artistRole}>Album • The Weeknd</Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* Artist list items */}
-        {ARTISTS.map((artist) => (
-          <TouchableOpacity key={artist.id} style={styles.artistItem} activeOpacity={0.7}>
-            <Image source={{ uri: artist.image }} style={styles.artistImage} />
-            <View style={styles.artistDetails}>
-              <Text style={styles.artistName}>{artist.name}</Text>
-              <Text style={styles.artistRole}>Artist</Text>
-            </View>
-          </TouchableOpacity>
-        ))}
-
-        {/* Action List items */}
-        <TouchableOpacity style={styles.actionItem} activeOpacity={0.7}>
-          <View style={styles.actionIconCircle}>
-            <Text style={styles.actionIconText}>+</Text>
-          </View>
-          <Text style={styles.actionName}>Add artists</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionItem} activeOpacity={0.7}>
-          <View style={styles.actionIconCircle}>
-            <Text style={styles.actionIconText}>+</Text>
-          </View>
-          <Text style={styles.actionName}>Add podcasts</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionItem} activeOpacity={0.7}>
-          <View style={styles.actionIconCircle}>
-            <Text style={styles.actionIconText}>+</Text>
-          </View>
-          <Text style={styles.actionName}>Add events and venues</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionItem} activeOpacity={0.7}>
-          <View style={styles.actionIconCircle}>
-            <Image
-              source={{ uri: 'https://img.icons8.com/material-outlined/60/000000/download.png' }}
-              style={styles.actionDownloadIcon}
+          ) : null
+        }
+        ListFooterComponent={() =>
+          isLoading ? (
+            <ActivityIndicator
+              size="large"
+              color="#6337EB"
+              style={{ marginVertical: ms(20) }}
             />
-          </View>
-          <Text style={styles.actionName}>Import your music</Text>
-        </TouchableOpacity>
+          ) : null
+        }
+        renderItem={({ item }) => {
+          if (activeTab === 'playlists') {
+            return (
+              <TouchableOpacity
+                style={styles.artistItem}
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate('PlayList', { id: item.id })}
+              >
+                {item.cover_image_path || item.cover_image ? (
+                  <Image
+                    source={{ uri: item.cover_image_path || item.cover_image }}
+                    style={styles.artistImage}
+                  />
+                ) : (
+                  <View
+                    style={[
+                      styles.artistImage,
+                      {
+                        backgroundColor: '#581C87',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      },
+                    ]}
+                  >
+                    <Text style={{ fontSize: ms(22) }}>🎵</Text>
+                  </View>
+                )}
+                <View style={styles.artistDetails}>
+                  <Text style={styles.artistName}>
+                    {item.title || item.name}
+                  </Text>
+                  <Text style={styles.artistRole}>
+                    {t('playlist')} • {item.songs_count || 0} {t('songs')}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          }
 
-        <View style={{ height: ms(100) }} />
-      </ScrollView>
+          if (activeTab === 'albums') {
+            return (
+              <TouchableOpacity
+                style={styles.artistItem}
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate('Album', { id: item })}
+              >
+                <Image
+                  source={{
+                    uri:
+                      item.image ||
+                      item.cover_image ||
+                      'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=600&auto=format&fit=crop',
+                  }}
+                  style={styles.artistImage}
+                />
+                <View style={styles.artistDetails}>
+                  <Text style={styles.artistName}>
+                    {item.title || item.name}
+                  </Text>
+                  <Text style={styles.artistRole}>
+                    {t('album')}{' '}
+                    {item.artist_name ? `• ${item.artist_name}` : ''}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          }
 
+          if (activeTab === 'artists') {
+            return (
+              <TouchableOpacity style={styles.artistItem} activeOpacity={0.7} onPress={() => navigation.navigate('ArtistsDetails', { artist: item })}>
+                <Image
+                  source={{
+                    uri:
+                      item.cover_image_path ||
+                      item.image ||
+                      'https://picsum.photos/200',
+                  }}
+                  style={styles.artistImage}
+                />
+                <View style={styles.artistDetails}>
+                  <Text style={styles.artistName}>
+                    {item.name || item.title}
+                  </Text>
+                  <Text style={styles.artistRole}>{t('artist')}</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          }
 
+          return null;
+        }}
+      />
     </View>
   );
 };

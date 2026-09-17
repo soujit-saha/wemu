@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, FONTS, ICONS } from '../../utils/constants';
 import { ms } from '../../utils/helper/metric';
+import { useTranslation } from '../../utils/hooks/useTranslation';
 
 const SHARE_OPTIONS = [
   {
@@ -54,6 +55,7 @@ const SHARE_OPTIONS = [
 
 const Share = () => {
   const navigation = useNavigation<any>();
+  const { t } = useTranslation();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -68,7 +70,7 @@ const Share = () => {
         >
           <Image source={ICONS.leftarrow} style={styles.backIcon} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Share</Text>
+        <Text style={styles.headerTitle}>{t('share')}</Text>
         <View style={styles.headerRightPlaceholder} />
       </View>
 
@@ -87,14 +89,17 @@ const Share = () => {
 
         {/* Share Options List */}
         <View style={styles.optionsList}>
-          {SHARE_OPTIONS.map((item) => (
-            <TouchableOpacity key={item.id} style={styles.optionRow} activeOpacity={0.7}>
-              <View style={[styles.iconContainer, { borderColor: '#F3F4F6', borderWidth: ms(1) }]}>
-                <Image source={{ uri: item.icon }} style={[styles.brandIcon, { tintColor: item.color }]} />
-              </View>
-              <Text style={styles.optionName}>{item.name}</Text>
-            </TouchableOpacity>
-          ))}
+          {SHARE_OPTIONS.map((item) => {
+            const displayName = item.id === 'copylink' ? t('copyLink') : item.id === 'more' ? t('more') : item.name;
+            return (
+              <TouchableOpacity key={item.id} style={styles.optionRow} activeOpacity={0.7}>
+                <View style={[styles.iconContainer, { borderColor: '#F3F4F6', borderWidth: ms(1) }]}>
+                  <Image source={{ uri: item.icon }} style={[styles.brandIcon, { tintColor: item.color }]} />
+                </View>
+                <Text style={styles.optionName}>{displayName}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </ScrollView>
     </SafeAreaView>

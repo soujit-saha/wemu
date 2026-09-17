@@ -19,24 +19,26 @@ import { COLORS, FONTS, ICONS } from '../../utils/constants';
 import { ms } from '../../utils/helper/metric';
 import { forgotPasswordRequest } from '../../redux/reducer/AuthReducer';
 import ToastAlert from '../../utils/helper/Toast';
+import { useTranslation } from '../../utils/hooks/useTranslation';
 
 const ForgotPassword = () => {
   const navigation = useNavigation<any>();
   const dispatch = useDispatch();
   const [email, setEmail] = useState('');
+  const { t } = useTranslation();
 
   const { isReqLoading } = useSelector((state: any) => state.AuthReducer);
 
   const handleSendCode = () => {
     const trimmedEmail = email.trim();
     if (!trimmedEmail) {
-      ToastAlert('Please enter your email address');
+      ToastAlert(t('pleaseEnterEmail'));
       return;
     }
     // Simple email regex validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(trimmedEmail)) {
-      ToastAlert('Please enter a valid email address');
+      ToastAlert(t('pleaseEnterEmailValid'));
       return;
     }
     dispatch(forgotPasswordRequest({ email: trimmedEmail }));
@@ -64,10 +66,9 @@ const ForgotPassword = () => {
 
           {/* Title and Subtitle */}
           <View style={styles.titleContainer}>
-            <Text style={styles.title}>Forgot Password</Text>
+            <Text style={styles.title}>{t('forgotPasswordTitle')}</Text>
             <Text style={styles.subtitle}>
-              Enter your email address to receive a{'\n'}
-              verification code.
+              {t('forgotPasswordSub')}
             </Text>
           </View>
 
@@ -75,7 +76,7 @@ const ForgotPassword = () => {
           <View style={styles.formContainer}>
             <TextInput
               style={styles.input}
-              placeholder="Email address"
+              placeholder={t('email')}
               placeholderTextColor="#9CA3AF"
               value={email}
               onChangeText={setEmail}
@@ -93,16 +94,16 @@ const ForgotPassword = () => {
               {isReqLoading ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Text style={styles.primaryButtonText}>Send Code</Text>
+                <Text style={styles.primaryButtonText}>{t('sendCode')}</Text>
               )}
             </TouchableOpacity>
           </View>
 
           {/* Bottom Link */}
           <View style={styles.bottomContainer}>
-            <Text style={styles.bottomLabel}>Remember your password? </Text>
+            <Text style={styles.bottomLabel}>{t('rememberPassword')}</Text>
             <TouchableOpacity onPress={() => navigation.navigate('Login')} activeOpacity={0.7} disabled={isReqLoading}>
-              <Text style={styles.bottomLink}>Log in</Text>
+              <Text style={styles.bottomLink}>{t('logIn')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

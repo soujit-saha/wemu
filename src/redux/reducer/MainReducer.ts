@@ -36,6 +36,10 @@ export interface MainState {
   respondToolStatusCheckRes?: any;
   myProfileRes?: any;
   artistDetailsRes?: any;
+  toggleSongLikeRes?: any;
+  toggleArtistFollowRes?: any;
+  raiseHelpRes?: any;
+  supportArticlesRes?: any;
 }
 
 const initialState: MainState = {
@@ -47,6 +51,10 @@ const initialState: MainState = {
   myProfileRes: {},
   getDashboardRes: {},
   artistDetailsRes: {},
+  toggleSongLikeRes: {},
+  toggleArtistFollowRes: {},
+  raiseHelpRes: {},
+  supportArticlesRes: {},
 };
 
 const MainSlice = createSlice({
@@ -135,6 +143,77 @@ const MainSlice = createSlice({
       state.error = action.payload?.error || 'getArtistDetails failed';
       state.status = action.type;
     },
+
+    toggleSongLikeRequest(state, action: PayloadAction<any>) {
+      // Do not set isMainLoading so it works smoothly in the background
+      state.status = action.type;
+    },
+    toggleSongLikeSuccess(state, action: PayloadAction<any>) {
+      state.toggleSongLikeRes = action.payload;
+      state.status = action.type;
+    },
+    toggleSongLikeFailure(state, action: PayloadAction<any>) {
+      state.error = action.payload?.error || 'toggleSongLike failed';
+      state.status = action.type;
+    },
+
+    toggleArtistFollowRequest(state, action: PayloadAction<any>) {
+      // Do not set isMainLoading so it works smoothly in the background
+      state.status = action.type;
+    },
+    toggleArtistFollowSuccess(state, action: PayloadAction<any>) {
+      state.toggleArtistFollowRes = action.payload;
+      state.status = action.type;
+    },
+    toggleArtistFollowFailure(state, action: PayloadAction<any>) {
+      state.error = action.payload?.error || 'toggleArtistFollow failed';
+      state.status = action.type;
+    },
+
+    raiseHelpRequest(state, action: PayloadAction<any>) {
+      state.isMainLoading = true;
+      state.status = action.type;
+    },
+    raiseHelpSuccess(state, action: PayloadAction<any>) {
+      state.isMainLoading = false;
+      state.raiseHelpRes = action.payload;
+      state.status = action.type;
+    },
+    raiseHelpFailure(state, action: PayloadAction<any>) {
+      state.isMainLoading = false;
+      state.error = action.payload?.error || 'raiseHelp failed';
+      state.status = action.type;
+    },
+
+    supportArticlesRequest(state, action: PayloadAction<any>) {
+      state.isMainLoading = true;
+      state.status = action.type;
+    },
+    supportArticlesSuccess(state, action: PayloadAction<any>) {
+      state.isMainLoading = false;
+      state.supportArticlesRes = action.payload;
+      state.status = action.type;
+    },
+    supportArticlesFailure(state, action: PayloadAction<any>) {
+      state.isMainLoading = false;
+      state.error = action.payload?.error || 'supportArticles failed';
+      state.status = action.type;
+    },
+
+    getCmsRequest(state, action: PayloadAction<any>) {
+      state.isMainLoading = true;
+      state.status = action.type;
+    },
+    getCmsSuccess(state, action: PayloadAction<any>) {
+      state.isMainLoading = false;
+      state.getCmsRes = action.payload;
+      state.status = action.type;
+    },
+    getCmsFailure(state, action: PayloadAction<any>) {
+      state.isMainLoading = false;
+      state.error = action.payload?.error || 'getCms failed';
+      state.status = action.type;
+    },
   },
 });
 
@@ -158,6 +237,26 @@ export const {
   getArtistDetailsRequest,
   getArtistDetailsSuccess,
   getArtistDetailsFailure,
+
+  toggleSongLikeRequest,
+  toggleSongLikeSuccess,
+  toggleSongLikeFailure,
+
+  toggleArtistFollowRequest,
+  toggleArtistFollowSuccess,
+  toggleArtistFollowFailure,
+
+  raiseHelpRequest,
+  raiseHelpSuccess,
+  raiseHelpFailure,
+
+  supportArticlesRequest,
+  supportArticlesSuccess,
+  supportArticlesFailure,
+
+  getCmsRequest,
+  getCmsSuccess,
+  getCmsFailure,
 } = MainSlice.actions;
 
 export default MainSlice.reducer;

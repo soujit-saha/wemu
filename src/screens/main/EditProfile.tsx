@@ -22,10 +22,12 @@ import { ms } from '../../utils/helper/metric';
 import { updateProfileRequest } from '../../redux/reducer/MainReducer';
 import ToastAlert from '../../utils/helper/Toast';
 import { validateEmail } from '../../utils/helper';
+import { useTranslation } from '../../utils/hooks/useTranslation';
 
 const EditProfile = () => {
   const navigation = useNavigation<any>();
   const dispatch = useDispatch();
+  const { t } = useTranslation();
 
   const { myProfileRes, isMainLoading } = useSelector((state: any) => state.MainReducer);
 
@@ -88,19 +90,19 @@ const EditProfile = () => {
   // Save profile info
   const handleSave = () => {
     if (!fullName.trim()) {
-      ToastAlert('Please enter your name');
+      ToastAlert(t('pleaseEnterName'));
       return;
     }
     if (!email.trim()) {
-      ToastAlert('Please enter your email');
+      ToastAlert(t('pleaseEnterEmailPrompt'));
       return;
     }
     if (!validateEmail(email.trim())) {
-      ToastAlert('Please enter a valid email address');
+      ToastAlert(t('pleaseEnterEmailValid'));
       return;
     }
     if (!mobileNumber.trim()) {
-      ToastAlert('Please enter your mobile number');
+      ToastAlert(t('pleaseEnterMobilePrompt'));
       return;
     }
 
@@ -171,7 +173,7 @@ const EditProfile = () => {
           >
             <Image source={ICONS.leftarrow} style={styles.backIcon} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Edit Profile</Text>
+          <Text style={styles.headerTitle}>{t('editProfile')}</Text>
           <View style={styles.headerRightPlaceholder} />
         </View>
 
@@ -197,13 +199,13 @@ const EditProfile = () => {
                 <CameraIcon color="#FFFFFF" />
               </View>
             </TouchableOpacity>
-            <Text style={styles.avatarInstruction}>Tap to change photo</Text>
+            <Text style={styles.avatarInstruction}>{t('tapToChangePhoto')}</Text>
           </View>
 
           {/* Form Container */}
           <View style={styles.formContainer}>
             {/* Full Name field */}
-            <Text style={styles.inputLabel}>Full Name</Text>
+            <Text style={styles.inputLabel}>{t('fullNameLabel')}</Text>
             <TouchableOpacity
               style={[
                 styles.inputWrapper,
@@ -218,7 +220,7 @@ const EditProfile = () => {
               <TextInput
                 ref={nameInputRef}
                 style={styles.textInput}
-                placeholder="Full name"
+                placeholder={t('fullNamePlaceholder')}
                 placeholderTextColor="#9CA3AF"
                 value={fullName}
                 onChangeText={setFullName}
@@ -229,7 +231,7 @@ const EditProfile = () => {
             </TouchableOpacity>
 
             {/* Email Address field */}
-            <Text style={styles.inputLabel}>Email Address</Text>
+            <Text style={styles.inputLabel}>{t('emailAddressLabel')}</Text>
             <TouchableOpacity
               style={[
                 styles.inputWrapper,
@@ -244,7 +246,7 @@ const EditProfile = () => {
               <TextInput
                 ref={emailInputRef}
                 style={styles.textInput}
-                placeholder="Email address"
+                placeholder={t('emailAddressPlaceholder')}
                 placeholderTextColor="#9CA3AF"
                 value={email}
                 onChangeText={setEmail}
@@ -257,7 +259,7 @@ const EditProfile = () => {
             </TouchableOpacity>
 
             {/* Mobile Number fields */}
-            <Text style={styles.inputLabel}>Mobile Number</Text>
+            <Text style={styles.inputLabel}>{t('mobileNumber')}</Text>
             <View style={styles.phoneInputRow}>
               {/* Phone Code Input wrapper */}
               {/* <TouchableOpacity
@@ -299,7 +301,7 @@ const EditProfile = () => {
                 <TextInput
                   ref={mobileInputRef}
                   style={styles.textInput}
-                  placeholder="Mobile number"
+                  placeholder={t('mobileNumber')}
                   placeholderTextColor="#9CA3AF"
                   value={mobileNumber}
                   onChangeText={setMobileNumber}
@@ -322,7 +324,7 @@ const EditProfile = () => {
               {isMainLoading ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Text style={styles.saveButtonText}>Save Changes</Text>
+                <Text style={styles.saveButtonText}>{t('saveChanges')}</Text>
               )}
             </TouchableOpacity>
           </View>

@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import TrackPlayer, { State, useActiveTrack, usePlaybackState } from 'react-native-track-player';
@@ -16,6 +16,7 @@ import { ms } from '../utils/helper/metric';
 const FloatingPlayer = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   
   const activeTrack = useActiveTrack();
   const playbackState = usePlaybackState();
@@ -48,7 +49,7 @@ const FloatingPlayer = () => {
     <TouchableOpacity
       style={[styles.floatingPlayer, { bottom: ms(66) + insets.bottom + ms(8) }]}
       activeOpacity={0.9}
-      onPress={() => navigation.navigate('MusicPlay', { track: activeTrack })}
+      onPress={() => navigation.navigate('MusicPlay', { track: activeTrack, fromScreen: route.name })}
     >
       <LinearGradient
         colors={[COLORS.playGradientStart, COLORS.playGradientMiddle, COLORS.playGradientEnd]}

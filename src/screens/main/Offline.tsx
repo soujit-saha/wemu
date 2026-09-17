@@ -16,9 +16,11 @@ import LinearGradient from 'react-native-linear-gradient';
 import { COLORS, FONTS } from '../../utils/constants';
 import { ms } from '../../utils/helper/metric';
 import ToastAlert from '../../utils/helper/Toast';
+import { useTranslation } from '../../utils/hooks/useTranslation';
 
 const Offline = ({ navigation }: any) => {
   const isScreen = !!navigation;
+  const { t } = useTranslation();
   const [isOffline, setIsOffline] = useState(false);
 
   useEffect(() => {
@@ -35,22 +37,22 @@ const Offline = ({ navigation }: any) => {
     NetInfo.fetch().then(state => {
       if (state.isConnected) {
         setIsOffline(false);
-        ToastAlert('Back online!');
+        ToastAlert(t('backOnline'));
         if (isScreen && navigation.canGoBack()) {
           navigation.goBack();
         }
       } else {
-        ToastAlert('Opening network settings to connect...');
+        ToastAlert(t('openingSettings'));
         if (Platform.OS === 'android') {
           Linking.sendIntent('android.settings.panel.action.INTERNET_CONNECTIVITY').catch(() => {
             Linking.sendIntent('android.settings.WIRELESS_SETTINGS').catch(() => {
-              ToastAlert('Please enable Wi-Fi or Mobile Data manually.');
+              ToastAlert(t('enableWifiPrompt'));
             });
           });
         } else {
           Linking.openURL('App-Prefs:root=WIFI').catch(() => {
             Linking.openURL('app-settings:').catch(() => {
-              ToastAlert('Please enable Wi-Fi or Mobile Data manually.');
+              ToastAlert(t('enableWifiPrompt'));
             });
           });
         }
@@ -65,7 +67,7 @@ const Offline = ({ navigation }: any) => {
 
         {/* Header Title */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Offline Mode</Text>
+          <Text style={styles.headerTitle}>{t('offlineMode')}</Text>
         </View>
 
         {/* Main Content Area */}
@@ -79,8 +81,8 @@ const Offline = ({ navigation }: any) => {
           </View>
 
           {/* Status Texts */}
-          <Text style={styles.titleText}>You're in Offline Mode</Text>
-          <Text style={styles.subtitleText}>Enjoy your downloaded music</Text>
+          <Text style={styles.titleText}>{t('youAreOffline')}</Text>
+          <Text style={styles.subtitleText}>{t('enjoyOfflineDesc')}</Text>
 
           {/* Go Online Button */}
           <TouchableOpacity
@@ -88,7 +90,7 @@ const Offline = ({ navigation }: any) => {
             activeOpacity={0.8}
             onPress={handleGoOnline}
           >
-            <Text style={styles.goOnlineText}>Go Online</Text>
+            <Text style={styles.goOnlineText}>{t('goOnline')}</Text>
           </TouchableOpacity>
         </View>
 

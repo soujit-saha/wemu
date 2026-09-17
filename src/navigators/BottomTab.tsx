@@ -10,6 +10,7 @@ import Library from '../screens/BottomTab/Library';
 import Premium from '../screens/BottomTab/Premium';
 import Profile from '../screens/BottomTab/Profile';
 import FloatingPlayer from '../component/FloatingPlayer';
+import { useTranslation } from '../utils/hooks/useTranslation';
 
 const Tab = createBottomTabNavigator();
 
@@ -18,6 +19,7 @@ const INACTIVE_TAB_COLOR = '#9CA3AF';
 
 const BottomTab = () => {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   return (
     <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
@@ -55,7 +57,7 @@ const BottomTab = () => {
                     focused ? styles.tabLabelActive : styles.tabLabelInactive,
                   ]}
                 >
-                  Home
+                  {t('home')}
                 </Text>
               </View>
             ),
@@ -80,7 +82,7 @@ const BottomTab = () => {
                     focused ? styles.tabLabelActive : styles.tabLabelInactive,
                   ]}
                 >
-                  Search
+                  {t('search')}
                 </Text>
               </View>
             ),
@@ -106,7 +108,7 @@ const BottomTab = () => {
                     focused ? styles.tabLabelActive : styles.tabLabelInactive,
                   ]}
                 >
-                  Library
+                  {t('library')}
                 </Text>
               </View>
             ),
@@ -132,7 +134,7 @@ const BottomTab = () => {
                     focused ? styles.tabLabelActive : styles.tabLabelInactive,
                   ]}
                 >
-                  Premium
+                  {t('plans')}
                 </Text>
               </View>
             ),
@@ -158,7 +160,7 @@ const BottomTab = () => {
                     focused ? styles.tabLabelActive : styles.tabLabelInactive,
                   ]}
                 >
-                  Profile
+                  {t('profile')}
                 </Text>
               </View>
             ),

@@ -10,21 +10,123 @@ import {
   Platform,
   KeyboardAvoidingView,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { useDispatch, useSelector } from 'react-redux';
+import { launchImageLibrary } from 'react-native-image-picker';
 import { COLORS, FONTS, ICONS } from '../../utils/constants';
 import { ms } from '../../utils/helper/metric';
+import { useTranslation } from '../../utils/hooks/useTranslation';
+import ToastAlert from '../../utils/helper/Toast';
+import { createOrUpdatePlaylistRequest } from '../../redux/reducer/SongReducer';
 
 const CreatePlayList = () => {
   const navigation = useNavigation<any>();
-  const [playlistName, setPlaylistName] = useState('');
-  const [description, setDescription] = useState('');
-  const [isPublic, setIsPublic] = useState(true);
+  const route = useRoute<any>();
+  const dispatch = useDispatch();
+  const { t } = useTranslation();
+
+  const playlist = route.params?.playlist;
+  const initialCover = playlist?.cover_image_path || playlist?.cover_image || playlist?.image;
+
+  const [playlistName, setPlaylistName] = useState(playlist?.title || playlist?.name || '');
+  const [description, setDescription] = useState(playlist?.description || '');
+  const [isPublic, setIsPublic] = useState(playlist?.is_public !== undefined ? !!playlist.is_public : true);
+  const [selectedImage, setSelectedImage] = useState<any>(null);
+  const [errors, setErrors] = useState<{
+    coverImage?: string;
+    playlistName?: string;
+    description?: string;
+  }>({});
+
+  const { isLoading } = useSelector((state: any) => state.SongReducer);
+
+  // Pick cover image from device library
+  const handleSelectImage = () => {
+    const options = {
+      mediaType: 'photo' as const,
+      quality: 0.8 as any,
+      maxWidth: 800,
+      maxHeight: 800,
+    };
+
+    launchImageLibrary(options, (response) => {
+      if (response.didCancel) {
+        return;
+      }
+      if (response.errorMessage) {
+        ToastAlert('Error picking image: ' + response.errorMessage);
+        return;
+      }
+      if (response.assets && response.assets.length > 0) {
+        setSelectedImage(response.assets[0]);
+        setErrors((prev) => ({ ...prev, coverImage: undefined }));
+      }
+    });
+  };
 
   const handleCreate = () => {
-    // Action to simulate playlist creation
-    navigation.goBack();
+    const newErrors: {
+      coverImage?: string;
+      playlistName?: string;
+      description?: string;
+    } = {};
+
+    // 1. Cover Image Validation
+    if (!selectedImage && !initialCover) {
+      newErrors.coverImage =
+        t('pleaseSelectCoverImage') || 'Please select a cover image';
+    }
+
+    // 2. Playlist Name Validation
+    if (!playlistName.trim()) {
+      newErrors.playlistName =
+        t('pleaseEnterPlaylistName') || 'Please enter playlist name';
+    } else if (playlistName.trim().length < 2) {
+      newErrors.playlistName = 'Playlist name must be at least 2 characters';
+    } else if (playlistName.trim().length > 100) {
+      newErrors.playlistName = 'Playlist name cannot exceed 100 characters';
+    }
+
+    // 3. Description Validation (optional, max 500 chars)
+    if (description.trim().length > 500) {
+      newErrors.description = 'Description cannot exceed 500 characters';
+    }
+
+    // If any error exists, show toast & display inline errors
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      const firstError =
+        newErrors.coverImage || newErrors.playlistName || newErrors.description;
+      if (firstError) {
+        ToastAlert(firstError);
+      }
+      return;
+    }
+
+    setErrors({});
+
+    const formData = new FormData();
+    if (playlist?.id || playlist?.uuid) {
+      formData.append('playlist_id', String(playlist.id || playlist.uuid));
+    }
+    formData.append('title', playlistName.trim());
+    if (description.trim()) {
+      formData.append('description', description.trim());
+    }
+    formData.append('is_public', isPublic ? 'true' : 'false');
+
+    if (selectedImage?.uri) {
+      formData.append('cover_image', {
+        uri: selectedImage.uri,
+        type: selectedImage.type || 'image/jpeg',
+        name: selectedImage.fileName || 'cover.jpg',
+      } as any);
+    }
+
+    dispatch(createOrUpdatePlaylistRequest(formData));
   };
 
   return (
@@ -40,7 +142,9 @@ const CreatePlayList = () => {
         >
           <Image source={ICONS.leftarrow} style={styles.backIcon} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Create Playlist</Text>
+        <Text style={styles.headerTitle}>
+          {playlist ? (t('saveChanges') || 'Edit Playlist') : t('createPlaylist')}
+        </Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -53,39 +157,78 @@ const CreatePlayList = () => {
           contentContainerStyle={styles.scrollContent}
         >
           {/* Cover Art Uploader Container */}
-          <TouchableOpacity style={styles.uploaderContainer} activeOpacity={0.7}>
-            <View style={styles.uploaderDashedBox}>
-              <Text style={styles.uploaderPlusIcon}>+</Text>
-            </View>
-          </TouchableOpacity>
+          <View style={styles.uploaderWrapper}>
+            <TouchableOpacity
+              style={[
+                styles.uploaderContainer,
+                !!errors.coverImage && styles.uploaderError,
+              ]}
+              activeOpacity={0.7}
+              onPress={handleSelectImage}
+            >
+              {selectedImage?.uri ? (
+                <Image source={{ uri: selectedImage.uri }} style={styles.coverPreview} />
+              ) : initialCover ? (
+                <Image source={{ uri: initialCover }} style={styles.coverPreview} />
+              ) : (
+                <View style={styles.uploaderDashedBox}>
+                  <Text style={styles.uploaderPlusIcon}>+</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+            {errors.coverImage && (
+              <Text style={styles.uploaderErrorText}>{errors.coverImage}</Text>
+            )}
+          </View>
 
           {/* Playlist Name Input */}
           <View style={styles.inputContainer}>
             <TextInput
-              style={styles.textInput}
-              placeholder="Playlist name"
+              style={[styles.textInput, !!errors.playlistName && styles.inputError]}
+              placeholder={t('playlistNamePlaceholder')}
               placeholderTextColor="#9CA3AF"
               value={playlistName}
-              onChangeText={setPlaylistName}
+              onChangeText={(text) => {
+                setPlaylistName(text);
+                if (errors.playlistName) {
+                  setErrors((prev) => ({ ...prev, playlistName: undefined }));
+                }
+              }}
             />
+            {errors.playlistName && (
+              <Text style={styles.errorText}>{errors.playlistName}</Text>
+            )}
           </View>
 
           {/* Playlist Description Input */}
           <View style={styles.inputContainer}>
             <TextInput
-              style={[styles.textInput, styles.textArea]}
-              placeholder="Description (optional)"
+              style={[
+                styles.textInput,
+                styles.textArea,
+                !!errors.description && styles.inputError,
+              ]}
+              placeholder={t('descriptionOptional')}
               placeholderTextColor="#9CA3AF"
               multiline
               textAlignVertical="top"
               value={description}
-              onChangeText={setDescription}
+              onChangeText={(text) => {
+                setDescription(text);
+                if (errors.description) {
+                  setErrors((prev) => ({ ...prev, description: undefined }));
+                }
+              }}
             />
+            {errors.description && (
+              <Text style={styles.errorText}>{errors.description}</Text>
+            )}
           </View>
+
 
           {/* Make Public Toggle Row */}
           <View style={styles.toggleRow}>
-            <Text style={styles.toggleLabel}>Make public</Text>
+            <Text style={styles.toggleLabel}>{t('makePublic')}</Text>
             
             {/* Custom Premium Toggle Switch */}
             <TouchableOpacity
@@ -107,11 +250,18 @@ const CreatePlayList = () => {
 
           {/* Submit Button */}
           <TouchableOpacity
-            style={styles.submitButton}
+            style={[styles.submitButton, isLoading && { opacity: 0.7 }]}
             activeOpacity={0.8}
             onPress={handleCreate}
+            disabled={isLoading}
           >
-            <Text style={styles.submitButtonText}>Create Playlist</Text>
+            {isLoading ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={styles.submitButtonText}>
+                {playlist ? (t('saveChanges') || 'Save Changes') : t('createPlaylist')}
+              </Text>
+            )}
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -163,6 +313,10 @@ const styles = StyleSheet.create({
     paddingBottom: ms(40),
     alignItems: 'center',
   },
+  uploaderWrapper: {
+    alignItems: 'center',
+    marginBottom: ms(36),
+  },
   uploaderContainer: {
     width: ms(150),
     height: ms(150),
@@ -170,8 +324,26 @@ const styles = StyleSheet.create({
     borderRadius: ms(16),
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: ms(36),
+    overflow: 'hidden',
   },
+  uploaderError: {
+    borderWidth: ms(1.5),
+    borderColor: '#EF4444',
+  },
+  uploaderErrorText: {
+    fontFamily: FONTS.regular24,
+    fontSize: ms(12),
+    color: '#EF4444',
+    marginTop: ms(8),
+    textAlign: 'center',
+  },
+  coverPreview: {
+    width: '100%',
+    height: '100%',
+    borderRadius: ms(16),
+    resizeMode: 'cover',
+  },
+
   uploaderDashedBox: {
     width: ms(44),
     height: ms(44),
@@ -191,6 +363,16 @@ const styles = StyleSheet.create({
   inputContainer: {
     width: '100%',
     marginBottom: ms(20),
+  },
+  inputError: {
+    borderColor: '#EF4444',
+  },
+  errorText: {
+    fontFamily: FONTS.regular24,
+    fontSize: ms(12),
+    color: '#EF4444',
+    marginTop: ms(6),
+    alignSelf: 'flex-start',
   },
   textInput: {
     width: '100%',

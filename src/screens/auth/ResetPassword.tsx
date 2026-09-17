@@ -19,6 +19,7 @@ import { COLORS, FONTS, ICONS } from '../../utils/constants';
 import { ms } from '../../utils/helper/metric';
 import { resetPasswordRequest } from '../../redux/reducer/AuthReducer';
 import ToastAlert from '../../utils/helper/Toast';
+import { useTranslation } from '../../utils/hooks/useTranslation';
 
 const ResetPassword = () => {
   const navigation = useNavigation<any>();
@@ -28,6 +29,7 @@ const ResetPassword = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [secureText, setSecureText] = useState(true);
   const [secureConfirmText, setSecureConfirmText] = useState(true);
+  const { t } = useTranslation();
 
   const { isReqLoading } = useSelector((state: any) => state.AuthReducer);
 
@@ -36,15 +38,15 @@ const ResetPassword = () => {
 
   const handleResetPassword = () => {
     if (!password.trim()) {
-      ToastAlert('Please enter a new password');
+      ToastAlert(t('pleaseEnterNewPassword'));
       return;
     }
     if (password.trim().length < 6) {
-      ToastAlert('Password must be at least 6 characters long');
+      ToastAlert(t('passwordMinLength'));
       return;
     }
     if (password.trim() !== confirmPassword.trim()) {
-      ToastAlert('Passwords do not match');
+      ToastAlert(t('passwordsDoNotMatch'));
       return;
     }
 
@@ -81,9 +83,9 @@ const ResetPassword = () => {
 
           {/* Title and Subtitle */}
           <View style={styles.titleContainer}>
-            <Text style={styles.title}>Reset Password</Text>
+            <Text style={styles.title}>{t('resetPasswordTitle')}</Text>
             <Text style={styles.subtitle}>
-              Enter your new password below.
+              {t('resetPasswordSub')}
             </Text>
           </View>
 
@@ -93,7 +95,7 @@ const ResetPassword = () => {
             <View style={styles.passwordContainer}>
               <TextInput
                 style={styles.passwordInput}
-                placeholder="New Password"
+                placeholder={t('newPassword')}
                 placeholderTextColor="#9CA3AF"
                 value={password}
                 onChangeText={setPassword}
@@ -124,7 +126,7 @@ const ResetPassword = () => {
             <View style={styles.passwordContainer}>
               <TextInput
                 style={styles.passwordInput}
-                placeholder="Confirm Password"
+                placeholder={t('confirmPassword')}
                 placeholderTextColor="#9CA3AF"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
@@ -160,16 +162,16 @@ const ResetPassword = () => {
               {isReqLoading ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Text style={styles.primaryButtonText}>Reset Password</Text>
+                <Text style={styles.primaryButtonText}>{t('resetPasswordTitle')}</Text>
               )}
             </TouchableOpacity>
           </View>
 
           {/* Bottom Link */}
           <View style={styles.bottomContainer}>
-            <Text style={styles.bottomLabel}>Remember your password? </Text>
+            <Text style={styles.bottomLabel}>{t('rememberPassword')}</Text>
             <TouchableOpacity onPress={() => navigation.navigate('Login')} activeOpacity={0.7} disabled={isReqLoading}>
-              <Text style={styles.bottomLink}>Log in</Text>
+              <Text style={styles.bottomLink}>{t('logIn')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

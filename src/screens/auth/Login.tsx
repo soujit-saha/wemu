@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -11,6 +11,8 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,6 +21,7 @@ import { COLORS, FONTS, ICONS } from '../../utils/constants';
 import { ms } from '../../utils/helper/metric';
 import { loginRequest } from '../../redux/reducer/AuthReducer';
 import ToastAlert from '../../utils/helper/Toast';
+import { useTranslation } from '../../utils/hooks/useTranslation';
 
 const Login = () => {
   const navigation = useNavigation<any>();
@@ -26,16 +29,23 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [secureText, setSecureText] = useState(true);
+  const [showLangModal, setShowLangModal] = useState(false);
+  const { t, lang, changeLanguage } = useTranslation();
 
   const { isReqLoading } = useSelector((state: any) => state.AuthReducer);
 
+  const selectLanguage = (selectedLang: 'en' | 'es') => {
+    changeLanguage(selectedLang);
+    setShowLangModal(false);
+  };
+
   const handleLogin = () => {
     if (!email.trim()) {
-      ToastAlert('Please enter your email or username');
+      ToastAlert(t('pleaseEnterEmail'));
       return;
     }
     if (!password.trim()) {
-      ToastAlert('Please enter your password');
+      ToastAlert(t('pleaseEnterPassword'));
       return;
     }
     dispatch(loginRequest({ email: email.trim(), password: password.trim() }));
@@ -52,19 +62,19 @@ const Login = () => {
           {/* Top Bar with Language Selector */}
           <View style={styles.topBar}>
             <View />
-            <TouchableOpacity style={styles.langButton} activeOpacity={0.7}>
-              <Text style={styles.langText}>EN ▾</Text>
+            <TouchableOpacity style={styles.langButton} onPress={() => setShowLangModal(true)} activeOpacity={0.7}>
+              <Text style={styles.langText}>{lang === 'en' ? 'EN ▾' : 'ES ▾'}</Text>
             </TouchableOpacity>
           </View>
 
           {/* Title */}
-          <Text style={styles.title}>Welcome Back</Text>
+          <Text style={styles.title}>{t('welcomeBack')}</Text>
 
           {/* Form */}
           <View style={styles.formContainer}>
             <TextInput
               style={styles.input}
-              placeholder="Email"
+              placeholder={t('email')}
               placeholderTextColor="#9CA3AF"
               value={email}
               onChangeText={setEmail}
@@ -76,7 +86,7 @@ const Login = () => {
             <View style={styles.passwordContainer}>
               <TextInput
                 style={styles.passwordInput}
-                placeholder="Password"
+                placeholder={t('password')}
                 placeholderTextColor="#9CA3AF"
                 value={password}
                 onChangeText={setPassword}
@@ -102,7 +112,7 @@ const Login = () => {
               disabled={isReqLoading}
               onPress={() => navigation.navigate('ForgotPassword')}
             >
-              <Text style={styles.forgotText}>Forget password?</Text>
+              <Text style={styles.forgotText}>{t('forgetPassword')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -114,7 +124,7 @@ const Login = () => {
               {isReqLoading ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Text style={styles.primaryButtonText}>Log In</Text>
+                <Text style={styles.primaryButtonText}>{t('logIn')}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -122,7 +132,7 @@ const Login = () => {
           {/* Divider */}
           <View style={styles.dividerContainer}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
+            <Text style={styles.dividerText}>{t('or')}</Text>
             <View style={styles.dividerLine} />
           </View>
 
@@ -133,27 +143,86 @@ const Login = () => {
                 source={{ uri: 'https://cdn-icons-png.flaticon.com/512/2991/2991148.png' }}
                 style={styles.socialIcon}
               />
-              <Text style={styles.socialButtonText}>Continue with Google</Text>
+              <Text style={styles.socialButtonText}>{t('continueGoogle')}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.socialButton} activeOpacity={0.7}>
+            {Platform.OS === 'ios' && <TouchableOpacity style={styles.socialButton} activeOpacity={0.7}>
               <Image
                 source={{ uri: 'https://cdn-icons-png.flaticon.com/512/0/747.png' }}
                 style={[styles.socialIcon, { tintColor: '#000000' }]}
               />
-              <Text style={styles.socialButtonText}>Continue with Apple</Text>
-            </TouchableOpacity>
+              <Text style={styles.socialButtonText}>{t('continueApple')}</Text>
+            </TouchableOpacity>}
           </View>
 
           {/* Bottom Link */}
           <View style={styles.bottomContainer}>
-            <Text style={styles.bottomLabel}>Don't have an account? </Text>
+            <Text style={styles.bottomLabel}>{t('dontHaveAccount')}</Text>
             <TouchableOpacity onPress={() => navigation.navigate('Signup')} activeOpacity={0.7}>
-              <Text style={styles.bottomLink}>Sign up</Text>
+              <Text style={styles.bottomLink}>{t('signUp')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Language Picker Modal */}
+      <Modal
+        visible={showLangModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowLangModal(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setShowLangModal(false)}
+        >
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>{t('selectLanguage')}</Text>
+
+            <TouchableOpacity
+              style={[
+                styles.modalOption,
+                lang === 'en' && styles.modalOptionSelected,
+              ]}
+              onPress={() => selectLanguage('en')}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.modalOptionText,
+                  lang === 'en' && styles.modalOptionTextSelected,
+                ]}
+              >
+                {t('english')}
+              </Text>
+              {lang === 'en' && (
+                <Text style={styles.checkmark}>✓</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.modalOption,
+                lang === 'es' && styles.modalOptionSelected,
+              ]}
+              onPress={() => selectLanguage('es')}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.modalOptionText,
+                  lang === 'es' && styles.modalOptionTextSelected,
+                ]}
+              >
+                {t('spanish')}
+              </Text>
+              {lang === 'es' && (
+                <Text style={styles.checkmark}>✓</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -318,5 +387,49 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.semiBold24,
     fontSize: ms(14),
     color: '#1293ED',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'flex-end',
+  },
+  modalContainer: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: ms(24),
+    borderTopRightRadius: ms(24),
+    paddingHorizontal: ms(24),
+    paddingTop: ms(24),
+    paddingBottom: ms(40),
+  },
+  modalTitle: {
+    fontFamily: FONTS.bold28,
+    fontSize: ms(20),
+    color: '#111827',
+    marginBottom: ms(20),
+  },
+  modalOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: ms(16),
+    borderBottomWidth: ms(1),
+    borderBottomColor: '#F3F4F6',
+  },
+  modalOptionSelected: {
+    borderBottomColor: '#EEF2FF',
+  },
+  modalOptionText: {
+    fontFamily: FONTS.medium24,
+    fontSize: ms(16),
+    color: '#4B5563',
+  },
+  modalOptionTextSelected: {
+    color: '#6337EB',
+    fontFamily: FONTS.semiBold24,
+  },
+  checkmark: {
+    fontSize: ms(18),
+    color: '#6337EB',
+    fontWeight: 'bold',
   },
 });

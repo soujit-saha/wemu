@@ -101,9 +101,11 @@ export function* getSectionDetailsSaga(
 
   try {
     const type_id = action.payload?.type_id || '';
+    const page = action.payload?.page || 1;
+    const per_page = action.payload?.per_page || 15;
     const response: ApiResponse = yield call(
       getApi,
-      `dashboard/section-details?type_id=${type_id}`,
+      `dashboard/section-details?type_id=${type_id}&page=${page}&per_page=${per_page}`,
       header,
     );
 

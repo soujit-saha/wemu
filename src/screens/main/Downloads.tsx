@@ -14,6 +14,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { COLORS, FONTS, ICONS } from '../../utils/constants';
 import { ms } from '../../utils/helper/metric';
 import FloatingPlayer from '../../component/FloatingPlayer';
+import { useTranslation } from '../../utils/hooks/useTranslation';
 
 interface SongItem {
     id: string;
@@ -56,6 +57,7 @@ const DOWNLOADED_SONGS: SongItem[] = [
 ];
 
 const Downloads = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const [smartDownloadEnabled, setSmartDownloadEnabled] = useState(true);
     const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
 
@@ -72,7 +74,7 @@ const Downloads = ({ navigation }: any) => {
                 >
                     <Image source={ICONS.leftarrow} style={styles.backIcon} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Downloads</Text>
+                <Text style={styles.headerTitle}>{t('downloads')}</Text>
                 <View style={styles.headerSpacer} />
             </View>
 
@@ -82,8 +84,8 @@ const Downloads = ({ navigation }: any) => {
                 {/* Smart Download Section */}
                 <View style={styles.smartDownloadRow}>
                     <View style={styles.smartDownloadTextContainer}>
-                        <Text style={styles.smartDownloadTitle}>Smart Download</Text>
-                        <Text style={styles.smartDownloadSubtitle}>Automatically download music</Text>
+                        <Text style={styles.smartDownloadTitle}>{t('smartDownload')}</Text>
+                        <Text style={styles.smartDownloadSubtitle}>{t('smartDownloadSub')}</Text>
                     </View>
 
                     {/* Premium Custom Toggle Switch */}
@@ -106,7 +108,7 @@ const Downloads = ({ navigation }: any) => {
 
                 {/* Downloaded Section */}
                 <View style={styles.downloadedSection}>
-                    <Text style={styles.downloadedTitle}>Downloaded</Text>
+                    <Text style={styles.downloadedTitle}>{t('downloaded')}</Text>
 
                     {DOWNLOADED_SONGS.map((song) => {
                         const isCurrentPlaying = playingTrackId === song.id;
