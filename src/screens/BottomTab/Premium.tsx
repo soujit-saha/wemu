@@ -23,6 +23,7 @@ import {
 import Loader from '../../utils/helper/Loader';
 import ToastAlert from '../../utils/helper/Toast';
 import { useTranslation } from '../../utils/hooks/useTranslation';
+import { useInterstitialAd } from '../../component/InterstitialAdComponent';
 
 const Premium = () => {
   const insets = useSafeAreaInsets();
@@ -35,6 +36,16 @@ const Premium = () => {
   const [isPaymentModalVisible, setIsPaymentModalVisible] = useState(false);
   const [selectedPlanForPayment, setSelectedPlanForPayment] = useState<any>(null);
   const [isPaying, setIsPaying] = useState(false);
+
+  const { loaded, showAd } = useInterstitialAd();
+  const [hasShownAd, setHasShownAd] = useState(false);
+
+  useEffect(() => {
+    if (loaded && !hasShownAd) {
+      showAd();
+      setHasShownAd(true);
+    }
+  }, [loaded, hasShownAd, showAd]);
 
   const { status, isLoading, subscriptionsRes, myCurrentSubscriptionRes, purchaseSubscriptionRes } = useSelector(
     (state: any) => state.SubscriptionReducer

@@ -20,6 +20,7 @@ import {
 } from '../../redux/reducer/MainReducer';
 import Loader from '../../utils/helper/Loader';
 import { useTranslation } from '../../utils/hooks/useTranslation';
+import BannerAdComponent from '../../component/BannerAdComponent';
 
 const BellIcon = () => (
   <View
@@ -379,6 +380,8 @@ const Home = () => {
         </View>
       </View>
 
+      {/* <BannerAdComponent /> */}
+
       {/* Content Scroll Area */}
       <ScrollView
         contentContainerStyle={[
@@ -387,6 +390,8 @@ const Home = () => {
         ]}
         showsVerticalScrollIndicator={false}
       >
+
+        <BannerAdComponent />
         {hasDynamicSections &&
           apiSections.map((section: any, sectionIdx: number) => {
             const rawTitle = section.title || '';
@@ -522,22 +527,24 @@ const Home = () => {
                   isPlaylist,
                   type === 'song'
                     ? track =>
-                        navigation.navigate('MusicPlay', {
-                          track: track.raw || track,
-                          fromScreen: 'Home',
-                          type_id: section.type_id,
-                        })
+                      navigation.navigate('MusicPlay', {
+                        track: track.raw || track,
+                        fromScreen: 'Home',
+                        type_id: section.type_id,
+                      })
                     : type === 'playlist'
-                    ? item =>
+                      ? item =>
                         navigation.navigate('PlayList', {
                           playlist: item.raw || item,
                           hideAddSong: true,
                         })
-                    : undefined,
+                      : undefined,
                 )}
               </React.Fragment>
             );
           })}
+
+        <BannerAdComponent />
       </ScrollView>
     </View>
   );

@@ -22,6 +22,7 @@ import { ms } from '../../utils/helper/metric';
 import { useTranslation } from '../../utils/hooks/useTranslation';
 
 import { TextInput, FlatList } from 'react-native';
+import BannerAdComponent from '../../component/BannerAdComponent';
 
 const Library = () => {
   const insets = useSafeAreaInsets();
@@ -168,6 +169,8 @@ const Library = () => {
           />
         </View>
       )}
+
+      <BannerAdComponent />
 
       {/* Filter Tag scrollview */}
       <View style={styles.tagsContainer}>

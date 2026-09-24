@@ -21,6 +21,7 @@ import { ms } from '../../utils/helper/metric';
 import { useTranslation } from '../../utils/hooks/useTranslation';
 import ToastAlert from '../../utils/helper/Toast';
 import { createOrUpdatePlaylistRequest } from '../../redux/reducer/SongReducer';
+import BannerAdComponent from '../../component/BannerAdComponent';
 
 const CreatePlayList = () => {
   const navigation = useNavigation<any>();
@@ -229,7 +230,7 @@ const CreatePlayList = () => {
           {/* Make Public Toggle Row */}
           <View style={styles.toggleRow}>
             <Text style={styles.toggleLabel}>{t('makePublic')}</Text>
-            
+
             {/* Custom Premium Toggle Switch */}
             <TouchableOpacity
               activeOpacity={0.8}
@@ -263,6 +264,10 @@ const CreatePlayList = () => {
               </Text>
             )}
           </TouchableOpacity>
+
+          <View style={{ marginTop: ms(10) }}>
+            <BannerAdComponent />
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

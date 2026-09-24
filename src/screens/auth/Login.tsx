@@ -15,13 +15,19 @@ import {
   Pressable,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import DeviceInfo from 'react-native-device-info';
 import { useDispatch, useSelector } from 'react-redux';
 import { COLORS, FONTS, ICONS } from '../../utils/constants';
 import { ms } from '../../utils/helper/metric';
-import { loginRequest } from '../../redux/reducer/AuthReducer';
+import { loginRequest, socialLoginRequest } from '../../redux/reducer/AuthReducer';
 import ToastAlert from '../../utils/helper/Toast';
 import { useTranslation } from '../../utils/hooks/useTranslation';
+import {
+  GoogleSignin,
+  GoogleSigninButton,
+  statusCodes,
+} from '@react-native-google-signin/google-signin';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const Login = () => {
   const navigation = useNavigation<any>();
@@ -34,12 +40,21 @@ const Login = () => {
 
   const { isReqLoading } = useSelector((state: any) => state.AuthReducer);
 
+  useEffect(() => {
+    GoogleSignin.configure({
+      webClientId: '201125485215-kcden6ngcv3gjkoj5e77h4ol52b65ms1.apps.googleusercontent.com', // Replace with your webClientId from Google Cloud Console
+      offlineAccess: true,
+    });
+  }, []);
+
+
+
   const selectLanguage = (selectedLang: 'en' | 'es') => {
     changeLanguage(selectedLang);
     setShowLangModal(false);
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email.trim()) {
       ToastAlert(t('pleaseEnterEmail'));
       return;
@@ -48,7 +63,47 @@ const Login = () => {
       ToastAlert(t('pleaseEnterPassword'));
       return;
     }
-    dispatch(loginRequest({ email: email.trim(), password: password.trim() }));
+    const deviceToken = await DeviceInfo.getUniqueId();
+    dispatch(loginRequest({
+      email: email.trim(),
+      password: password.trim(),
+      device_token: deviceToken,
+      device_type: Platform.OS,
+    }));
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      await GoogleSignin.hasPlayServices();
+      const userInfo: any = await GoogleSignin.signIn();
+      console.log('Google login userInfo:', userInfo, userInfo?.data?.user?.name);
+
+      const deviceToken = await DeviceInfo.getUniqueId();
+      const formData = new FormData();
+      formData.append('name', userInfo?.data?.user?.name || '');
+      formData.append('email', userInfo?.data?.user?.email || '');
+      formData.append('provider', 'google');
+      formData.append('provider_id', userInfo?.data?.user?.id || '');
+      if (userInfo?.data?.user?.photo) {
+        formData.append('profile_pic', userInfo?.data?.user?.photo || '');
+      }
+      formData.append('device_type', Platform.OS);
+      formData.append('device_token', deviceToken);
+
+      // Call the social login API
+      dispatch(socialLoginRequest(formData));
+    } catch (error: any) {
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        console.log('User cancelled the login flow');
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        console.log('Signing in');
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        ToastAlert('Play services not available');
+      } else {
+        ToastAlert('Something went wrong with Google Sign-In');
+        console.log(error);
+      }
+    }
   };
 
   return (
@@ -138,7 +193,9 @@ const Login = () => {
 
           {/* Social Buttons */}
           <View style={styles.socialContainer}>
-            <TouchableOpacity style={styles.socialButton} activeOpacity={0.7}>
+            <TouchableOpacity style={styles.socialButton} activeOpacity={0.7}
+              onPress={handleGoogleLogin}
+            >
               <Image
                 source={{ uri: 'https://cdn-icons-png.flaticon.com/512/2991/2991148.png' }}
                 style={styles.socialIcon}

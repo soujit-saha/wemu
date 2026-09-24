@@ -12,6 +12,8 @@ import {
   Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Platform } from 'react-native';
+import DeviceInfo from 'react-native-device-info';
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useDispatch, useSelector } from 'react-redux';
@@ -20,6 +22,7 @@ import { ms } from '../../utils/helper/metric';
 import { logoutRequest } from '../../redux/reducer/AuthReducer';
 import { myProfileRequest } from '../../redux/reducer/MainReducer';
 import { useTranslation } from '../../utils/hooks/useTranslation';
+import BannerAdComponent from '../../component/BannerAdComponent';
 
 const Profile = () => {
   const dispatch = useDispatch();
@@ -38,8 +41,13 @@ const Profile = () => {
   const displayAvatar = myProfileRes?.data?.profile_image || '';
   // 'https://randomuser.me/api/portraits/men/32.jpg';
 
-  const handleLogout = () => {
-    dispatch(logoutRequest({ showMsg: true }));
+  const handleLogout = async () => {
+    const deviceToken = await DeviceInfo.getUniqueId();
+    dispatch(logoutRequest({
+      showMsg: true,
+      device_token: deviceToken,
+      device_type: Platform.OS,
+    }));
   };
 
   const selectLanguage = (selectedLang: 'en' | 'es') => {
@@ -132,6 +140,8 @@ const Profile = () => {
             <Text style={styles.profileHandle}>{displayEmail}</Text>
           ) : null}
         </View>
+
+        <BannerAdComponent />
 
         {/* Stats Row */}
         <View style={styles.statsRow}>

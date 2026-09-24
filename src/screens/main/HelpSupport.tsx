@@ -21,6 +21,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { raiseHelpRequest, supportArticlesRequest, getCmsRequest } from '../../redux/reducer/MainReducer';
 import ToastAlert from '../../utils/helper/Toast';
 import RenderHtml from 'react-native-render-html';
+import { useTranslation } from '../../utils/hooks/useTranslation';
 
 const helpItems = [
   'Help Center',
@@ -36,6 +37,7 @@ const HelpSupport: FunctionComponent = () => {
   const dispatch = useDispatch();
   const { supportArticlesRes, getCmsRes } = useSelector((state: any) => state.MainReducer);
   const { width } = useWindowDimensions();
+  const { t } = useTranslation();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
@@ -67,11 +69,11 @@ const HelpSupport: FunctionComponent = () => {
 
   const handleSubmit = () => {
     if (!subject.trim()) {
-      ToastAlert('Please enter subject');
+      ToastAlert(t('pleaseEnterSubject'));
       return;
     }
     if (!queries.trim()) {
-      ToastAlert('Please enter queries');
+      ToastAlert(t('pleaseEnterQueries'));
       return;
     }
     const formData = new FormData();
@@ -93,7 +95,7 @@ const HelpSupport: FunctionComponent = () => {
         >
           <Image source={ICONS.leftarrow} style={styles.backIcon} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Help & Support</Text>
+        <Text style={styles.headerTitle}>{t('helpSupport')}</Text>
         <View style={styles.headerRightPlaceholder} />
       </View>
 
@@ -102,17 +104,27 @@ const HelpSupport: FunctionComponent = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.listContainer}>
-          {helpItems.map(item => (
-            <TouchableOpacity
-              key={item}
-              style={styles.optionItem}
-              activeOpacity={0.7}
-              onPress={() => handleOpenModal(item)}
-            >
-              <Text style={styles.optionText}>{item}</Text>
-              <Text style={styles.chevron}>›</Text>
-            </TouchableOpacity>
-          ))}
+          {helpItems.map(item => {
+            let translatedItem = item;
+            if (item === 'Help Center') translatedItem = t('helpCenter');
+            if (item === 'Contact Us') translatedItem = t('contactUs');
+            if (item === 'Report a Problem') translatedItem = t('reportProblem');
+            if (item === 'Terms & Conditions') translatedItem = t('termsConditions');
+            if (item === 'Privacy Policy') translatedItem = t('privacyPolicy');
+            if (item === 'Community Guidelines') translatedItem = t('communityGuidelines');
+
+            return (
+              <TouchableOpacity
+                key={item}
+                style={styles.optionItem}
+                activeOpacity={0.7}
+                onPress={() => handleOpenModal(item)}
+              >
+                <Text style={styles.optionText}>{translatedItem}</Text>
+                <Text style={styles.chevron}>›</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </ScrollView>
 
@@ -127,7 +139,15 @@ const HelpSupport: FunctionComponent = () => {
             <TouchableOpacity onPress={handleCloseModal} style={styles.backButton} activeOpacity={0.7}>
               <Image source={ICONS.leftarrow} style={styles.backIcon} />
             </TouchableOpacity>
-            <Text style={styles.modalHeaderTitle}>{selectedItem}</Text>
+            <Text style={styles.modalHeaderTitle}>{
+              selectedItem === 'Help Center' ? t('helpCenter') : 
+              selectedItem === 'Contact Us' ? t('contactUs') :
+              selectedItem === 'Report a Problem' ? t('reportProblem') :
+              selectedItem === 'Terms & Conditions' ? t('termsConditions') :
+              selectedItem === 'Privacy Policy' ? t('privacyPolicy') :
+              selectedItem === 'Community Guidelines' ? t('communityGuidelines') :
+              selectedItem
+            }</Text>
             <View style={{ width: ms(40) }} />
           </View>
 
@@ -138,20 +158,20 @@ const HelpSupport: FunctionComponent = () => {
             <ScrollView contentContainerStyle={styles.modalScrollContent}>
               {selectedItem === 'Report a Problem' ? (
                 <View style={styles.reportProblemContainer}>
-                  <Text style={styles.inputLabel}>Subject</Text>
+                  <Text style={styles.inputLabel}>{t('subject')}</Text>
                   <TextInput
                     style={styles.textInput}
-                    placeholder="Enter subject"
+                    placeholder={t('enterSubject')}
                     placeholderTextColor="#9CA3AF"
                     value={subject}
                     onChangeText={setSubject}
                     maxLength={255}
                   />
 
-                  <Text style={styles.inputLabel}>Description</Text>
+                  <Text style={styles.inputLabel}>{t('description')}</Text>
                   <TextInput
                     style={[styles.textInput, styles.textArea]}
-                    placeholder="Describe your problem"
+                    placeholder={t('describeProblem')}
                     placeholderTextColor="#9CA3AF"
                     value={queries}
                     onChangeText={setQueries}
@@ -160,14 +180,14 @@ const HelpSupport: FunctionComponent = () => {
                   />
 
                   <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} activeOpacity={0.8}>
-                    <Text style={styles.submitButtonText}>Submit</Text>
+                    <Text style={styles.submitButtonText}>{t('submit')}</Text>
                   </TouchableOpacity>
                 </View>
               ) : selectedItem === 'Help Center' ? (
                 <View style={styles.helpCenterContainer}>
                   {(!supportArticlesRes?.data || supportArticlesRes?.data?.length === 0) ? (
                     <View style={styles.defaultModalContainer}>
-                      <Text style={styles.defaultModalText}>No support articles available at the moment.</Text>
+                      <Text style={styles.defaultModalText}>{t('noSupportArticles')}</Text>
                     </View>
                   ) : (
                     supportArticlesRes.data.map((categoryGroup: any, index: number) => (
@@ -194,7 +214,15 @@ const HelpSupport: FunctionComponent = () => {
                 </View>
               ) : ['Contact Us', 'Terms & Conditions', 'Privacy Policy', 'Community Guidelines'].includes(selectedItem || '') ? (
                 <View style={styles.cmsContainer}>
-                  <Text style={styles.cmsTitle}>{getCmsRes?.data?.title || getCmsRes?.data?.data?.title || selectedItem}</Text>
+                  <Text style={styles.cmsTitle}>{getCmsRes?.data?.title || getCmsRes?.data?.data?.title || (
+                    selectedItem === 'Help Center' ? t('helpCenter') : 
+                    selectedItem === 'Contact Us' ? t('contactUs') :
+                    selectedItem === 'Report a Problem' ? t('reportProblem') :
+                    selectedItem === 'Terms & Conditions' ? t('termsConditions') :
+                    selectedItem === 'Privacy Policy' ? t('privacyPolicy') :
+                    selectedItem === 'Community Guidelines' ? t('communityGuidelines') :
+                    selectedItem
+                  )}</Text>
                   {(getCmsRes?.data?.content || getCmsRes?.data?.data?.content || getCmsRes?.data?.description) ? (
                     <RenderHtml
                       contentWidth={width - ms(48)}
@@ -214,13 +242,21 @@ const HelpSupport: FunctionComponent = () => {
                       }}
                     />
                   ) : (
-                    <Text style={styles.cmsContent}>Content loading...</Text>
+                    <Text style={styles.cmsContent}>{t('contentLoading')}</Text>
                   )}
                 </View>
               ) : (
                 <View style={styles.defaultModalContainer}>
                   <Text style={styles.defaultModalText}>
-                    Information about {selectedItem} will be available soon.
+                    {t('informationAbout')}{
+                      selectedItem === 'Help Center' ? t('helpCenter') : 
+                      selectedItem === 'Contact Us' ? t('contactUs') :
+                      selectedItem === 'Report a Problem' ? t('reportProblem') :
+                      selectedItem === 'Terms & Conditions' ? t('termsConditions') :
+                      selectedItem === 'Privacy Policy' ? t('privacyPolicy') :
+                      selectedItem === 'Community Guidelines' ? t('communityGuidelines') :
+                      selectedItem
+                    }{t('willBeAvailableSoon')}
                   </Text>
                 </View>
               )}

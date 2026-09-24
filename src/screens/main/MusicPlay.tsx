@@ -11,6 +11,7 @@ import { useTranslation } from '../../utils/hooks/useTranslation';
 import { toggleSongLikeRequest, toggleArtistFollowRequest } from '../../redux/reducer/MainReducer';
 import { getPlayerQueueRequest } from '../../redux/reducer/SongReducer';
 import Loader from '../../utils/helper/Loader';
+import BannerAdComponent from '../../component/BannerAdComponent';
 
 const MusicPlay = () => {
     const insets = useSafeAreaInsets();
@@ -42,12 +43,12 @@ const MusicPlay = () => {
         : [];
 
     const parseDuration = (durationStr: any) => {
-        if (!durationStr) return 200; // default 3:20
+        if (!durationStr) return 0;
         if (typeof durationStr === 'number') return durationStr;
         const match = durationStr.toString().match(/(\d+)\s*min/i);
         if (match) {
             const mins = parseInt(match[1], 10);
-            return mins > 0 ? mins * 60 : 200;
+            return mins > 0 ? mins * 60 : 0;
         }
         const parts = durationStr.toString().split(':');
         if (parts.length === 2) {
@@ -57,7 +58,7 @@ const MusicPlay = () => {
                 return mins * 60 + secs;
             }
         }
-        return 200;
+        return 0;
     };
 
     // Track Player hooks for real progress and state
@@ -86,7 +87,11 @@ const MusicPlay = () => {
 
     const progressData = useProgress();
     const progress = progressData.position;
-    const totalDuration = progressData.duration || parseDuration(track?.duration || track?.total_duration);
+
+    // Android has a known bug with VBR MP3 files where it miscalculates the duration by 20-30 seconds.
+    // However, we MUST use TrackPlayer's estimation if available, otherwise seeking past its known end will fail.
+    const metaDuration = parseDuration(track?.duration || track?.total_duration);
+    const totalDuration = progressData.duration > 0 ? progressData.duration : (metaDuration > 0 ? metaDuration : 200);
 
     const [isPlayerReady, setIsPlayerReady] = useState(false);
     const [isLiked, setIsLiked] = useState(!!(track?.is_liked || track?.raw?.is_liked));
@@ -98,8 +103,14 @@ const MusicPlay = () => {
     const lastSeekPositionRef = useRef<number | null>(null);
     const lastSeekTimeRef = useRef<number>(0);
 
+    const barWidthRef = useRef<number>(1);
+    const totalDurationRef = useRef<number>(totalDuration);
+    // Keep the ref in sync with the latest totalDuration on every render
+    totalDurationRef.current = totalDuration;
+
     const pageRef = useRef(0);
-    const [fetchingNext, setFetchingNext] = useState(false);
+    const lastFetchedSongIdRef = useRef<string>('');
+    const [fetchingDirection, setFetchingDirection] = useState<'none' | 'next' | 'prev'>('none');
     const playerQueueRes = useSelector((state: any) => state.SongReducer?.playerQueueRes);
     const isSongLoading = useSelector((state: any) => state.SongReducer?.isSongLoading);
 
@@ -120,9 +131,18 @@ const MusicPlay = () => {
         }
     };
 
-    const fetchNextSongs = () => {
-        const nextPage = pageRef.current + 1;
-        pageRef.current = nextPage;
+    const fetchNextSongs = (actionType?: string) => {
+        const currentSongId = track?.id?.toString() || '';
+        let nextPage;
+
+        if (lastFetchedSongIdRef.current !== currentSongId) {
+            nextPage = 1;
+            pageRef.current = 1;
+            lastFetchedSongIdRef.current = currentSongId;
+        } else {
+            nextPage = pageRef.current + 1;
+            pageRef.current = nextPage;
+        }
 
         const fromScreen = route.params?.fromScreen || '';
         const typeIdParam = route.params?.type_id || '';
@@ -148,7 +168,8 @@ const MusicPlay = () => {
             keyword: keywordValue,
             page: nextPage,
             per_page: 5,
-            last_played_song_id: track?.id || ''
+            last_played_song_id: track?.id || '',
+            ...(actionType ? { direction: actionType } : {})
         }));
     };
 
@@ -305,7 +326,8 @@ const MusicPlay = () => {
     }, [isPlayerReady, route.params?.track]);
 
     useEffect(() => {
-        const resultData = playerQueueRes?.data?.result || playerQueueRes?.data;
+        const resultData = playerQueueRes?.data?.local_queue
+            || playerQueueRes?.data;
         if (resultData?.length > 0) {
             const addTracksToQueue = async () => {
                 const tracksToAdd = resultData.map((item: any) => {
@@ -328,14 +350,24 @@ const MusicPlay = () => {
                     };
                 });
 
+                console.log("Local array created (tracksToAdd):", JSON.stringify(tracksToAdd, null, 2));
+
                 const queue = await TrackPlayer.getQueue();
                 const newStartIndex = queue.length;
-                await TrackPlayer.add(tracksToAdd);
 
-                if (fetchingNext) {
-                    setFetchingNext(false);
-                    await TrackPlayer.skip(newStartIndex);
+                if (fetchingDirection === 'prev') {
+                    const reversedTracks = [...tracksToAdd].reverse();
+                    await TrackPlayer.add(reversedTracks, 0);
+                    setFetchingDirection('none');
+                    await TrackPlayer.skip(reversedTracks.length - 1);
                     await TrackPlayer.play();
+                } else {
+                    await TrackPlayer.add(tracksToAdd);
+                    if (fetchingDirection === 'next') {
+                        setFetchingDirection('none');
+                        await TrackPlayer.skip(newStartIndex);
+                        await TrackPlayer.play();
+                    }
                 }
             };
             addTracksToQueue();
@@ -377,8 +409,8 @@ const MusicPlay = () => {
             }
 
             if (currentTrackIndex !== null && currentTrackIndex >= queue.length - 1) {
-                setFetchingNext(true);
-                fetchNextSongs();
+                setFetchingDirection('next');
+                fetchNextSongs('next');
             } else {
                 await TrackPlayer.skipToNext();
             }
@@ -408,45 +440,48 @@ const MusicPlay = () => {
             if (currentTrackIndex !== null && currentTrackIndex > 0) {
                 await TrackPlayer.skipToPrevious();
             } else {
-                setFetchingNext(true);
-                fetchNextSongs();
+                setFetchingDirection('prev');
+                fetchNextSongs('prev');
             }
         } catch (error) {
             console.error("Skip Previous Error", error);
         }
     };
 
-    const activePercent = totalDuration > 0 ? (currentProgress / totalDuration) * 100 : 0;
+    const activePercent = totalDuration > 0 ? Math.min(100, Math.max(0, (currentProgress / totalDuration) * 100)) : 0;
 
     const panResponder = useRef(
         PanResponder.create({
             onStartShouldSetPanResponder: () => true,
+            onStartShouldSetPanResponderCapture: () => true,
             onMoveShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponderCapture: () => true,
             onPanResponderGrant: (evt) => {
                 setIsDragging(true);
-                if (totalDuration > 0) {
-                    const barWidth = Dimensions.get('window').width - ms(64);
-                    const touchX = evt.nativeEvent.pageX - ms(32);
-                    const clickPercent = Math.max(0, Math.min(1, touchX / barWidth));
-                    const newPos = clickPercent * totalDuration;
-                    setDragProgress(newPos);
+                const dur = totalDurationRef.current;
+                if (dur > 0) {
+                    const actualBarWidth = barWidthRef.current || 1;
+                    const touchX = evt.nativeEvent.locationX;
+                    const clickPercent = Math.max(0, Math.min(1, touchX / actualBarWidth));
+                    setDragProgress(clickPercent * dur);
                 }
             },
             onPanResponderMove: (evt) => {
-                if (totalDuration > 0) {
-                    const barWidth = Dimensions.get('window').width - ms(64);
-                    const touchX = evt.nativeEvent.pageX - ms(32);
-                    const clickPercent = Math.max(0, Math.min(1, touchX / barWidth));
-                    const newPos = clickPercent * totalDuration;
-                    setDragProgress(newPos);
+                const dur = totalDurationRef.current;
+                if (dur > 0) {
+                    const actualBarWidth = barWidthRef.current || 1;
+                    const touchX = evt.nativeEvent.locationX;
+                    const clickPercent = Math.max(0, Math.min(1, touchX / actualBarWidth));
+                    setDragProgress(clickPercent * dur);
                 }
             },
             onPanResponderRelease: async (evt) => {
-                if (totalDuration > 0) {
-                    const barWidth = Dimensions.get('window').width - ms(64);
-                    const touchX = evt.nativeEvent.pageX - ms(32);
-                    const clickPercent = Math.max(0, Math.min(1, touchX / barWidth));
-                    const newPos = clickPercent * totalDuration;
+                const dur = totalDurationRef.current;
+                if (dur > 0) {
+                    const actualBarWidth = barWidthRef.current || 1;
+                    const touchX = evt.nativeEvent.locationX;
+                    const clickPercent = Math.max(0, Math.min(1, touchX / actualBarWidth));
+                    const newPos = clickPercent * dur;
 
                     lastSeekPositionRef.current = newPos;
                     lastSeekTimeRef.current = Date.now();
@@ -624,13 +659,22 @@ const MusicPlay = () => {
                         </View>
 
                         {/* Progress Slider (Interactive Seeker) */}
-                        <View
-                            {...panResponder.panHandlers}
-                            style={styles.progressContainer}
-                        >
-                            <View style={styles.progressBarBackground}>
-                                <View style={[styles.progressBarActive, { width: `${activePercent}%` }]} />
-                                <View style={[styles.progressThumb, { left: `${activePercent}%` }]} />
+                        <View style={styles.progressContainer}>
+                            <View style={{ paddingVertical: ms(15), position: 'relative', justifyContent: 'center' }}>
+                                {/* The visual bar */}
+                                <View style={styles.progressBarBackground}>
+                                    <View style={[styles.progressBarActive, { width: `${activePercent}%` }]} />
+                                    <View style={[styles.progressThumb, { left: `${activePercent}%` }]} />
+                                </View>
+
+                                {/* The transparent touch overlay */}
+                                <View
+                                    {...panResponder.panHandlers}
+                                    onLayout={(e) => {
+                                        barWidthRef.current = e.nativeEvent.layout.width;
+                                    }}
+                                    style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'transparent' }}
+                                />
                             </View>
                             <View style={styles.timeRow}>
                                 <Text style={styles.timeText}>{formatTime(currentProgress)}</Text>
@@ -680,7 +724,8 @@ const MusicPlay = () => {
 
                         {/* Footer Navigation bar */}
                         <View style={styles.footer}>
-                            <View style={styles.footerButton} />
+                            {/* <View style={styles.footerButton} /> */}
+                            <BannerAdComponent />
                             {/* <TouchableOpacity style={styles.footerButton} activeOpacity={0.7}>
                                 <LibraryIcon />
                             </TouchableOpacity>
@@ -888,6 +933,9 @@ const styles = StyleSheet.create({
     },
     progressContainer: {
         paddingHorizontal: ms(32),
+        paddingVertical: ms(10), // Added for larger touch area
+        zIndex: 10, // Ensures slider is above controlsRow so buttons don't steal touches
+        elevation: 10, // Required for Android to respect z-index for touch events
     },
     progressBarBackground: {
         height: ms(4),
@@ -902,12 +950,17 @@ const styles = StyleSheet.create({
         borderRadius: ms(2),
     },
     progressThumb: {
-        width: ms(12),
-        height: ms(12),
-        borderRadius: ms(6),
+        width: ms(16), // Slightly larger for better grabbing
+        height: ms(16),
+        borderRadius: ms(8),
         backgroundColor: '#FFFFFF',
         position: 'absolute',
-        transform: [{ translateX: -ms(6) }],
+        transform: [{ translateX: -ms(8) }],
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 3,
+        elevation: 4,
     },
     timeRow: {
         flexDirection: 'row',
@@ -924,7 +977,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: ms(32),
-        marginTop: ms(-5)
+        marginTop: ms(5)
     },
     controlButton: {
         width: ms(44),
@@ -1024,7 +1077,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: ms(36),
         borderTopWidth: StyleSheet.hairlineWidth,
         borderTopColor: 'rgba(255, 255, 255, 0.15)',
-        paddingVertical: ms(8),
+        paddingVertical: ms(4),
     },
     footerButton: {
         width: ms(48),

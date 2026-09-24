@@ -13,6 +13,7 @@ export interface AuthState {
   ResetPasswordRes?: {};
   ForgotPasswordRes?: {};
   deleteAccountRes?: {};
+  socialLoginRes?: {};
   hasSeenOnboarding: boolean;
   lang: 'en' | 'es';
 }
@@ -29,6 +30,7 @@ const initialState: AuthState = {
   ResetPasswordRes: {},
   ForgotPasswordRes: {},
   deleteAccountRes: {},
+  socialLoginRes: {},
   hasSeenOnboarding: false,
   lang: 'en',
 };
@@ -66,6 +68,22 @@ const AuthSlice = createSlice({
     loginFailure(state, action: PayloadAction<any>) {
       state.isReqLoading = false;
       state.error = action.payload?.error || 'Login failed';
+      state.status = action.type;
+    },
+
+    // socialLoginRequest
+    socialLoginRequest(state, action: PayloadAction<any>) {
+      state.isReqLoading = true;
+      state.status = action.type;
+    },
+    socialLoginSuccess(state, action: PayloadAction<any>) {
+      state.isReqLoading = false;
+      state.socialLoginRes = action.payload;
+      state.status = action.type;
+    },
+    socialLoginFailure(state, action: PayloadAction<any>) {
+      state.isReqLoading = false;
+      state.error = action.payload?.error || 'Social login failed';
       state.status = action.type;
     },
 
@@ -183,6 +201,10 @@ export const {
   loginRequest,
   loginSuccess,
   loginFailure,
+
+  socialLoginRequest,
+  socialLoginSuccess,
+  socialLoginFailure,
 
   signupRequest,
   signupSuccess,

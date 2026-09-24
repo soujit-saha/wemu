@@ -1,4 +1,7 @@
 {
   "name": "wemu",
-  "displayName": "wemu"
+  "displayName": "wemu",
+  "react-native-google-mobile-ads": {
+    "android_app_id": "ca-app-pub-7682293002309363~2848737146"
+  }
 }

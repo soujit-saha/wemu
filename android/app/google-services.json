@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "201125485215",
+    "project_id": "wemu-acdab",
+    "storage_bucket": "wemu-acdab.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:201125485215:android:d9da9a45927ea0de3fa0aa",
+        "android_client_info": {
+          "package_name": "com.onlinemusic.wemu"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "201125485215-bio46oi0go9flmr50cde029f7a2dgq22.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.onlinemusic.wemu",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "201125485215-kcden6ngcv3gjkoj5e77h4ol52b65ms1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBkT8uHQRetFZiExT0Y1AqYaQ61akuLxqg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "201125485215-kcden6ngcv3gjkoj5e77h4ol52b65ms1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

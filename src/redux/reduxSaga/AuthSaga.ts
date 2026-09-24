@@ -7,6 +7,8 @@ import {
   getTokenSuccess,
   loginSuccess,
   loginFailure,
+  socialLoginSuccess,
+  socialLoginFailure,
   signupSuccess,
   signupFailure,
   logoutFailure,
@@ -106,6 +108,38 @@ export function* loginSaga(
   }
 }
 
+//social login saga
+export function* socialLoginSaga(
+  action: PayloadAction<any>,
+): Generator<any, void, any> {
+  const header: ApiHeaders = {
+    Accept: 'application/json',
+    contenttype: 'multipart/form-data',
+  };
+  try {
+    const response: ApiResponse = yield call(
+      postApi,
+      'social-login',
+      action.payload,
+      header,
+    );
+
+    console.log('social login response', response);
+    yield put(socialLoginSuccess(response?.data));
+
+    const token = response?.data?.token || response?.data?.data?.token;
+    if (token) {
+      yield call(AsyncStorage.setItem, constants.TOKEN, JSON.stringify(token));
+      yield put(getTokenSuccess(token));
+      ToastAlert('Login Successful');
+    }
+  } catch (error: any) {
+    console.log(error);
+    yield put(socialLoginFailure(error));
+    ToastAlert(error?.response?.data?.message || 'Social Login Failed');
+  }
+}
+
 //signup saga
 export function* signupSaga(
   action: PayloadAction<any>,
@@ -181,9 +215,27 @@ export function* verifyOTPSaga(
 
 //logout saga
 export function* logoutSaga(
-  action: PayloadAction<LogoutPayload>,
+  action: PayloadAction<any>,
 ): Generator<any, void, any> {
   try {
+    const item = yield select(getItems);
+    const header: ApiHeaders = {
+      Accept: 'application/json',
+      contenttype: 'application/json',
+      accesstoken: item.getTokenResponse,
+    };
+
+    try {
+      yield call(
+        postApi,
+        'logout',
+        action.payload,
+        header,
+      );
+    } catch (apiError) {
+      console.log('Logout API error:', apiError);
+    }
+
     yield call(AsyncStorage.removeItem, constants.TOKEN);
     yield put(getTokenSuccess(null)); // Provide default empty token instead of null
     yield put(logoutSuccess({ message: 'logout', success: true }));
@@ -287,6 +339,7 @@ export function* deleteAccountSaga(
 export function* watchAuthSaga(): Generator<any, void, any> {
   yield takeLatest('Auth/getTokenRequest', getTokenSaga);
   yield takeLatest('Auth/loginRequest', loginSaga);
+  yield takeLatest('Auth/socialLoginRequest', socialLoginSaga);
   yield takeLatest('Auth/signupRequest', signupSaga);
   yield takeLatest('Auth/logoutRequest', logoutSaga);
   yield takeLatest('Auth/verifyOTPRequest', verifyOTPSaga);

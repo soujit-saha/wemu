@@ -53,7 +53,7 @@ const SplashScreen = () => {
                     />
 
                     {/* Brand Name */}
-                    <Text style={styles.brandName}>Wemu</Text>
+                    <Text style={styles.brandName}>Garifuna Music Library</Text>
 
                     {/* Subtitle */}
                     <Text style={styles.subtitle}>Music for Every Moment</Text>
@@ -92,11 +92,12 @@ const styles = StyleSheet.create({
         overflow: 'hidden'
     },
     brandName: {
-        fontFamily: FONTS.bold28,
-        fontSize: ms(36),
-        color: '#5D33D6', // Wemu purple
+        fontFamily: FONTS.medium24,
+        fontSize: ms(26),
+        color: '#ffef10ff', // Wemu purple
         marginTop: ms(14),
         includeFontPadding: false,
+        backgroundColor: '#000000'
     },
     subtitle: {
         fontFamily: FONTS.medium24,

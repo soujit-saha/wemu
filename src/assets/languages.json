@@ -163,7 +163,23 @@
     "plans": "Plans",
     "removeFromPlaylist": "Remove from playlist",
     "searchSongs": "Search songs",
-    "noSongsFound": "No songs found."
+    "noSongsFound": "No songs found.",
+    "helpCenter": "Help Center",
+    "contactUs": "Contact Us",
+    "reportProblem": "Report a Problem",
+    "termsConditions": "Terms & Conditions",
+    "communityGuidelines": "Community Guidelines",
+    "pleaseEnterSubject": "Please enter subject",
+    "pleaseEnterQueries": "Please enter queries",
+    "subject": "Subject",
+    "enterSubject": "Enter subject",
+    "description": "Description",
+    "describeProblem": "Describe your problem",
+    "submit": "Submit",
+    "noSupportArticles": "No support articles available at the moment.",
+    "contentLoading": "Content loading...",
+    "informationAbout": "Information about ",
+    "willBeAvailableSoon": " will be available soon."
   },
   "es": {
     "welcomeBack": "Bienvenido de nuevo",
@@ -329,6 +345,22 @@
     "plans": "Planes",
     "removeFromPlaylist": "Eliminar de la lista de reproducción",
     "searchSongs": "Buscar canciones",
-    "noSongsFound": "No se encontraron canciones."
+    "noSongsFound": "No se encontraron canciones.",
+    "helpCenter": "Centro de ayuda",
+    "contactUs": "Contáctenos",
+    "reportProblem": "Reportar un problema",
+    "termsConditions": "Términos y condiciones",
+    "communityGuidelines": "Pautas de la comunidad",
+    "pleaseEnterSubject": "Por favor, introduzca el asunto",
+    "pleaseEnterQueries": "Por favor, introduzca las consultas",
+    "subject": "Asunto",
+    "enterSubject": "Introduzca el asunto",
+    "description": "Descripción",
+    "describeProblem": "Describa su problema",
+    "submit": "Entregar",
+    "noSupportArticles": "No hay artículos de soporte disponibles en este momento.",
+    "contentLoading": "Cargando contenido...",
+    "informationAbout": "La información sobre ",
+    "willBeAvailableSoon": " estará disponible pronto."
   }
 }

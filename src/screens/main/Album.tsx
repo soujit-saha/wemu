@@ -22,6 +22,7 @@ import { COLORS, FONTS, ICONS } from '../../utils/constants';
 import { ms } from '../../utils/helper/metric';
 import FloatingPlayer from '../../component/FloatingPlayer';
 import { useTranslation } from '../../utils/hooks/useTranslation';
+import BannerAdComponent from '../../component/BannerAdComponent';
 
 interface TrackItem {
   id: string;
@@ -82,12 +83,12 @@ const Album = () => {
       } else {
         if (albumTracksRes && albumTracksRes.length > 0) {
           setLocalItems(prev => {
-            const newItems = albumTracksRes.filter((item: any) => 
+            const newItems = albumTracksRes.filter((item: any) =>
               !prev.some((p: any) => (p.id || p.uuid) === (item.id || item.uuid))
             );
             return [...prev, ...newItems];
           });
-          
+
           if (albumTracksRes.length < 15) {
             setHasMore(false);
           }
@@ -170,6 +171,7 @@ const Album = () => {
             'https://picsum.photos/200',
           duration:
             parseFloat(trackItem.duration || trackItem.total_duration) || 0,
+          track: trackItem,
         }));
 
         await TrackPlayer.add(trackQueue);
@@ -216,6 +218,7 @@ const Album = () => {
           'https://picsum.photos/200',
         duration:
           parseFloat(trackItem.duration || trackItem.total_duration) || 0,
+        track: trackItem,
       }));
 
       await TrackPlayer.add(trackQueue);
@@ -244,6 +247,8 @@ const Album = () => {
         <Text style={styles.headerTitle}>{t('album')}</Text>
         <View style={styles.headerSpacer} />
       </View>
+
+      <BannerAdComponent />
 
       <FlatList
         showsVerticalScrollIndicator={false}

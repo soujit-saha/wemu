@@ -29,6 +29,7 @@ import TrackPlayer, {
   usePlaybackState,
   useActiveTrack,
 } from 'react-native-track-player';
+import BannerAdComponent from '../../component/BannerAdComponent';
 
 const PlayList = () => {
   const navigation = useNavigation<any>();
@@ -209,6 +210,7 @@ const PlayList = () => {
             'https://picsum.photos/200',
           duration:
             parseFloat(trackItem.duration || trackItem.total_duration) || 0,
+          track: trackItem,
         }));
 
         await TrackPlayer.add(trackQueue);
@@ -226,7 +228,7 @@ const PlayList = () => {
     try {
       try {
         await TrackPlayer.setupPlayer({});
-      } catch (e) {}
+      } catch (e) { }
 
       // Check if this specific song is already active
       const isCurrentlyPlayingThisSong =
@@ -257,6 +259,7 @@ const PlayList = () => {
           'https://picsum.photos/200',
         duration:
           parseFloat(trackItem.duration || trackItem.total_duration) || 0,
+        track: trackItem,
       }));
 
       await TrackPlayer.add(trackQueue);
@@ -285,6 +288,8 @@ const PlayList = () => {
         <Text style={styles.headerTitle}>{t('playlist')}</Text>
         <View style={styles.headerSpacer} />
       </View>
+
+      <BannerAdComponent />
 
       {isLoading ? (
         <View style={styles.loaderContainer}>
@@ -367,7 +372,7 @@ const PlayList = () => {
               onPress={handlePlayPlaylist}
             >
               {isPlaying &&
-              tracks.some((t: any) => t.id?.toString() === activeTrack?.id) ? (
+                tracks.some((t: any) => t.id?.toString() === activeTrack?.id) ? (
                 <View style={styles.pauseIconContainer}>
                   <View style={styles.pauseBar} />
                   <View style={styles.pauseBar} />

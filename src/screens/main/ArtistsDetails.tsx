@@ -19,6 +19,7 @@ import FloatingPlayer from '../../component/FloatingPlayer';
 import { getArtistDetailsRequest, toggleArtistFollowRequest } from '../../redux/reducer/MainReducer';
 import Loader from '../../utils/helper/Loader';
 import { useTranslation } from '../../utils/hooks/useTranslation';
+import BannerAdComponent from '../../component/BannerAdComponent';
 
 const { width } = Dimensions.get('window');
 
@@ -252,12 +253,12 @@ const ArtistsDetails = () => {
           </TouchableOpacity>
 
           {/* More options button */}
-          <TouchableOpacity style={styles.iconActionButton} activeOpacity={0.7}>
+          {/* <TouchableOpacity style={styles.iconActionButton} activeOpacity={0.7}>
             <Text style={styles.moreActionText}>⋮</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           {/* Shuffle Button */}
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={styles.iconActionButton}
             onPress={() => setIsShuffle(!isShuffle)}
             activeOpacity={0.7}
@@ -269,7 +270,7 @@ const ArtistsDetails = () => {
                 isShuffle && { tintColor: '#1ED760' }, // Green when active
               ]}
             />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           {/* Big Green Play Button */}
           <TouchableOpacity
@@ -284,6 +285,8 @@ const ArtistsDetails = () => {
             <View style={styles.playTriangle} />
           </TouchableOpacity>
         </View>
+
+        <BannerAdComponent />
 
         {/* Promo Card: Listen to the new album */}
         {/* <TouchableOpacity style={styles.promoCard} activeOpacity={0.9}>

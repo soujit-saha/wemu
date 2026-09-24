@@ -19,6 +19,7 @@ import { ms } from '../../utils/helper/metric';
 import FloatingPlayer from '../../component/FloatingPlayer';
 import { useTranslation } from '../../utils/hooks/useTranslation';
 import { searchSongRequest } from '../../redux/reducer/SongReducer';
+import BannerAdComponent from '../../component/BannerAdComponent';
 
 const { width } = Dimensions.get('window');
 
@@ -591,8 +592,12 @@ const Search = () => {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
+
+
       {/* Search Header Input */}
       {renderSearchInput()}
+
+      <BannerAdComponent />
 
       {/* Conditional Content based on Search Input Text */}
       {searchText.length === 0 ? renderBrowseState() : renderResultsState()}
