@@ -19,6 +19,7 @@ import {
   subscriptionsRequest,
   myCurrentSubscriptionRequest,
   purchaseSubscriptionRequest,
+  cancelSubscriptionRequest,
 } from '../../redux/reducer/SubscriptionReducer';
 import Loader from '../../utils/helper/Loader';
 import ToastAlert from '../../utils/helper/Toast';
@@ -47,7 +48,7 @@ const Premium = () => {
     }
   }, [loaded, hasShownAd, showAd]);
 
-  const { status, isLoading, subscriptionsRes, myCurrentSubscriptionRes, purchaseSubscriptionRes } = useSelector(
+  const { status, isLoading, subscriptionsRes, myCurrentSubscriptionRes, purchaseSubscriptionRes, cancelSubscriptionRes } = useSelector(
     (state: any) => state.SubscriptionReducer
   );
 
@@ -79,8 +80,11 @@ const Premium = () => {
     if (status === 'Subscription/purchaseSubscriptionSuccess') {
       ToastAlert(t('subSuccess'));
       dispatch(myCurrentSubscriptionRequest({}));
+    } else if (status === 'Subscription/cancelSubscriptionSuccess') {
+      ToastAlert(t('cancelSubSuccess') || 'Subscription cancelled successfully');
+      dispatch(myCurrentSubscriptionRequest({}));
     }
-  }, [purchaseSubscriptionRes, status, dispatch]);
+  }, [purchaseSubscriptionRes, cancelSubscriptionRes, status, dispatch]);
 
   const handlePay = async () => {
     if (!selectedPlanForPayment) return;
@@ -201,7 +205,7 @@ const Premium = () => {
             <View style={styles.activePlanHeaderRow}>
               <View style={styles.activeBadge}>
                 <View style={styles.activeDot} />
-                <Text style={styles.activeBadgeText}>ACTIVE PLAN</Text>
+                <Text style={styles.activeBadgeText}>{t('activePlan') || 'ACTIVE PLAN'}</Text>
               </View>
               <Text style={styles.activePlanPrice}>
                 {currentSub?.subscription?.price ? `${currentSub.subscription.currency === 'USD' ? '$' : '₹'}${currentSub.subscription.price} / ${currentSub.subscription.interval}` : ''}
@@ -218,6 +222,18 @@ const Premium = () => {
                 {t('renewsOn')} {formatDate(expiryDate)}
               </Text>
             ) : null}
+
+            <TouchableOpacity
+              style={styles.cancelSubscriptionButton}
+              activeOpacity={0.8}
+              onPress={() => {
+                dispatch(cancelSubscriptionRequest({}));
+              }}
+            >
+              <Text style={styles.cancelSubscriptionText}>
+                {t('cancelSubscription') || 'Cancel Subscription'}
+              </Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.promoSection}>
@@ -358,7 +374,7 @@ const Premium = () => {
             <CardField
               postalCodeEnabled={false}
               placeholders={{
-                number: 'Card Number',
+                number: t('cardNumber') || 'Card Number',
               }}
               cardStyle={{
                 backgroundColor: '#FFFFFF',
@@ -499,6 +515,21 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.medium24,
     fontSize: ms(12),
     color: '#6B7280',
+  },
+  cancelSubscriptionButton: {
+    marginTop: ms(16),
+    paddingVertical: ms(10),
+    backgroundColor: '#FEE2E2',
+    borderRadius: ms(8),
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  cancelSubscriptionText: {
+    fontFamily: FONTS.bold24,
+    fontSize: ms(14),
+    color: '#DC2626',
   },
   sectionHeader: {
     marginBottom: ms(20),

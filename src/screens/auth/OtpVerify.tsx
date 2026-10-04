@@ -142,13 +142,13 @@ const OtpVerify = () => {
               {t('verifyEmailSub')}{'\n'}
               <Text style={styles.emailText}>{email}</Text>
             </Text>
-            {otpFromResponse ? (
+            {/* {otpFromResponse ? (
               <View style={styles.otpBanner}>
                 <Text style={styles.otpBannerText}>
                   {t('yourOtpIs')} <Text style={styles.otpBannerCode}>{otpFromResponse}</Text>
                 </Text>
               </View>
-            ) : null}
+            ) : null} */}
           </View>
 
           {/* 4 Digit Inputs */}

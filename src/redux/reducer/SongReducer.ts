@@ -16,6 +16,8 @@ export interface SongState {
   songsToAddRes?: any;
   playerQueueRes?: any;
   songsByAlbumRes?: any;
+  artistSongsRes?: any;
+  skipSongRes?: any;
 }
 
 const initialState: SongState = {
@@ -33,6 +35,8 @@ const initialState: SongState = {
   songsToAddRes: {},
   playerQueueRes: {},
   songsByAlbumRes: {},
+  artistSongsRes: {},
+  skipSongRes: {},
 };
 
 const SongSlice = createSlice({
@@ -40,16 +44,16 @@ const SongSlice = createSlice({
   initialState,
   reducers: {
     increasePlayCountRequest(state, action: PayloadAction<any>) {
-      state.isSongLoading = true;
+      // state.isSongLoading = true;
       state.status = action.type;
     },
     increasePlayCountSuccess(state, action: PayloadAction<any>) {
-      state.isSongLoading = false;
+      // state.isSongLoading = false;
       state.increasePlayCountRes = action.payload;
       state.status = action.type;
     },
     increasePlayCountFailure(state, action: PayloadAction<any>) {
-      state.isSongLoading = false;
+      // state.isSongLoading = false;
       state.error = action.payload?.error || 'increase play count failed';
       state.status = action.type;
     },
@@ -231,6 +235,38 @@ const SongSlice = createSlice({
       state.error = action.payload?.error || 'Get songs by album failed';
       state.status = action.type;
     },
+
+    // Artist Songs
+    getArtistSongsRequest(state, action: PayloadAction<any>) {
+      state.isSongLoading = true;
+      state.status = action.type;
+    },
+    getArtistSongsSuccess(state, action: PayloadAction<any>) {
+      state.isSongLoading = false;
+      state.artistSongsRes = action.payload;
+      state.status = action.type;
+    },
+    getArtistSongsFailure(state, action: PayloadAction<any>) {
+      state.isSongLoading = false;
+      state.error = action.payload?.error || 'Get artist songs failed';
+      state.status = action.type;
+    },
+
+    // Skip Song
+    skipSongRequest(state, action: PayloadAction<any>) {
+      state.isSongLoading = true;
+      state.status = action.type;
+    },
+    skipSongSuccess(state, action: PayloadAction<any>) {
+      state.isSongLoading = false;
+      state.skipSongRes = action.payload;
+      state.status = action.type;
+    },
+    skipSongFailure(state, action: PayloadAction<any>) {
+      state.isSongLoading = false;
+      state.error = action.payload?.error || 'Skip song failed';
+      state.status = action.type;
+    },
   },
 });
 
@@ -271,6 +307,12 @@ export const {
   getSongsByAlbumRequest,
   getSongsByAlbumSuccess,
   getSongsByAlbumFailure,
+  getArtistSongsRequest,
+  getArtistSongsSuccess,
+  getArtistSongsFailure,
+  skipSongRequest,
+  skipSongSuccess,
+  skipSongFailure,
 } = SongSlice.actions;
 
 // Aliases for convenience
@@ -313,5 +355,13 @@ export const playerQueueFailure = getPlayerQueueFailure;
 export const songsByAlbumRequest = getSongsByAlbumRequest;
 export const songsByAlbumSuccess = getSongsByAlbumSuccess;
 export const songsByAlbumFailure = getSongsByAlbumFailure;
+
+export const artistSongsRequest = getArtistSongsRequest;
+export const artistSongsSuccess = getArtistSongsSuccess;
+export const artistSongsFailure = getArtistSongsFailure;
+
+export const skipRequest = skipSongRequest;
+export const skipSuccess = skipSongSuccess;
+export const skipFailure = skipSongFailure;
 
 export default SongSlice.reducer;

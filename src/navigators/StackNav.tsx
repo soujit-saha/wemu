@@ -19,6 +19,7 @@ import Otp from '../screens/auth/Otp';
 import ForgotPassword from '../screens/auth/ForgotPassword';
 import OtpVerify from '../screens/auth/OtpVerify';
 import ResetPassword from '../screens/auth/ResetPassword';
+import WelcomeScreen from '../screens/auth/WelcomeScreen';
 import MusicPlay from '../screens/main/MusicPlay';
 import Share from '../screens/main/Share';
 import Notification from '../screens/main/Notification';
@@ -41,6 +42,7 @@ type RootStackParamList = {
   ForgotPassword: undefined;
   OtpVerify: { email: string };
   ResetPassword: { email: string; code: string };
+  WelcomeScreen: undefined;
   BottomTab: undefined;
   MusicPlay: undefined;
   Share: undefined;
@@ -82,7 +84,7 @@ const smoothTransition = {
 };
 
 export default function StackNav() {
-  const { getTokenResponse, isLoading, hasSeenOnboarding } = useSelector(
+  const { getTokenResponse, isLoading, hasSeenOnboarding, isNewRegistration } = useSelector(
     (state: any) => state.AuthReducer,
   );
 
@@ -109,21 +111,38 @@ export default function StackNav() {
             OtpVerify,
             ResetPassword,
           }
-      : {
-          BottomTab,
-          MusicPlay,
-          Share,
-          Notification,
-          Offline,
-          Downloads,
-          Album,
-          PlayList,
-          CreatePlayList,
-          EditProfile,
-          SeeAll,
-          ArtistsDetails,
-          HelpSupport,
-        };
+      : isNewRegistration
+        ? {
+            WelcomeScreen,
+            BottomTab,
+            MusicPlay,
+            Share,
+            Notification,
+            Offline,
+            Downloads,
+            Album,
+            PlayList,
+            CreatePlayList,
+            EditProfile,
+            SeeAll,
+            ArtistsDetails,
+            HelpSupport,
+          }
+        : {
+            BottomTab,
+            MusicPlay,
+            Share,
+            Notification,
+            Offline,
+            Downloads,
+            Album,
+            PlayList,
+            CreatePlayList,
+            EditProfile,
+            SeeAll,
+            ArtistsDetails,
+            HelpSupport,
+          };
 
   if (isLoading) {
     return <SplashScreen />;

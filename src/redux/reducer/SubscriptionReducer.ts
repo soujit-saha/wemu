@@ -8,6 +8,8 @@ export interface SubscriptionState {
   myCurrentSubscriptionRes?: any;
   subscriptionsRes?: any;
   sectionDetailsRes?: any;
+  cancelSubscriptionRes?: any;
+  isSkipPremission?: boolean;
 }
 
 const initialState: SubscriptionState = {
@@ -17,6 +19,8 @@ const initialState: SubscriptionState = {
   myCurrentSubscriptionRes: {},
   subscriptionsRes: [],
   sectionDetailsRes: {},
+  cancelSubscriptionRes: {},
+  isSkipPremission: true,
 };
 
 const SubscriptionSlice = createSlice({
@@ -82,6 +86,24 @@ const SubscriptionSlice = createSlice({
       state.error = action.payload?.error || 'get section details failed';
       state.status = action.type;
     },
+
+    cancelSubscriptionRequest(state, action: PayloadAction<any>) {
+      state.isLoading = true;
+      state.status = action.type;
+    },
+    cancelSubscriptionSuccess(state, action: PayloadAction<any>) {
+      state.isLoading = false;
+      state.cancelSubscriptionRes = action.payload;
+      state.status = action.type;
+    },
+    cancelSubscriptionFailure(state, action: PayloadAction<any>) {
+      state.isLoading = false;
+      state.error = action.payload?.error || 'cancel subscription failed';
+      state.status = action.type;
+    },
+    isSkipPremission(state, action: PayloadAction<boolean>) {
+      state.isSkipPremission = action.payload;
+    },
   },
 });
 
@@ -98,6 +120,10 @@ export const {
   getSectionDetailsRequest,
   getSectionDetailsSuccess,
   getSectionDetailsFailure,
+  cancelSubscriptionRequest,
+  cancelSubscriptionSuccess,
+  cancelSubscriptionFailure,
+  isSkipPremission,
 } = SubscriptionSlice.actions;
 
 export default SubscriptionSlice.reducer;

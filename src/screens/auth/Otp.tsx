@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { COLORS, FONTS, ICONS } from '../../utils/constants';
 import { ms } from '../../utils/helper/metric';
-import { verifyOTPRequest } from '../../redux/reducer/AuthReducer';
+import { verifyOTPRequest, resendOTPRequest } from '../../redux/reducer/AuthReducer';
 import ToastAlert from '../../utils/helper/Toast';
 import { useTranslation } from '../../utils/hooks/useTranslation';
 
@@ -30,7 +30,7 @@ const Otp = () => {
 
   const { isReqLoading, signUpRes } = useSelector((state: any) => state.AuthReducer);
 
-  const mobileNumber = route.params?.mobile_number || 1900190019;
+  // const mobileNumber = route.params?.mobile_number || 1900190019;
 
   const otpFromResponse =
     signUpRes?.otp ||
@@ -48,7 +48,7 @@ const Otp = () => {
     }
     dispatch(
       verifyOTPRequest({
-        mobile_number: Number(mobileNumber),
+        email: route.params?.email,
         verification_code: Number(fullCode),
       }),
     );
@@ -99,6 +99,10 @@ const Otp = () => {
       setTimer(30);
       setCode(['', '', '', '', '', '']);
       inputRefs[0].current?.focus();
+
+      const formData = new FormData();
+      formData.append('email', route.params?.email);
+      dispatch(resendOTPRequest(formData));
     }
   };
 
@@ -123,18 +127,18 @@ const Otp = () => {
 
           {/* Title and Subtitle */}
           <View style={styles.titleContainer}>
-            <Text style={styles.title}>{t('verifyNumberTitle')}</Text>
+            <Text style={styles.title}>{t('verifyEmailTitle')}</Text>
             <Text style={styles.subtitle}>
-              {t('verifyNumberSub')}{'\n'}
-              <Text style={styles.phoneNumber}>+{route.params?.phone_code || 91} {mobileNumber}</Text>
+              {t('verifyEmailSub')}{'\n'}
+              <Text style={styles.phoneNumber}>{route.params?.email || ""}</Text>
             </Text>
-            {otpFromResponse ? (
+            {/* {otpFromResponse ? (
               <View style={styles.otpBanner}>
                 <Text style={styles.otpBannerText}>
                   {t('yourOtpIs')} <Text style={styles.otpBannerCode}>{otpFromResponse}</Text>
                 </Text>
               </View>
-            ) : null}
+            ) : null} */}
           </View>
 
           {/* 6 Digit Inputs */}

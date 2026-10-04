@@ -11,8 +11,11 @@ import {
   subscriptionsSuccess,
   getSectionDetailsSuccess,
   getSectionDetailsFailure,
+  cancelSubscriptionSuccess,
+  cancelSubscriptionFailure,
 } from '../reducer/SubscriptionReducer';
 import { getApi, postApi } from '../../utils/helper/ApiRequest';
+import { myProfileRequest } from '../reducer/MainReducer';
 
 const getItems = (state: any) => state.AuthReducer;
 
@@ -35,6 +38,7 @@ export function* purchaseSubscriptionSaga(
     );
 
     yield put(purchaseSubscriptionSuccess(response?.data));
+    yield put(myProfileRequest({}));
   } catch (error: any) {
     yield put(purchaseSubscriptionFailure(error));
     ToastAlert(
@@ -120,6 +124,31 @@ export function* getSectionDetailsSaga(
   }
 }
 
+export function* cancelSubscriptionSaga(): Generator<any, void, any> {
+  const item = yield select(getItems);
+  const header: ApiHeaders = {
+    Accept: 'application/json',
+    contenttype: 'application/json',
+    accesstoken: item.getTokenResponse,
+  };
+
+  try {
+    const response: ApiResponse = yield call(
+      getApi,
+      'user/subscription/cancel',
+      header,
+    );
+
+    yield put(cancelSubscriptionSuccess(response?.data));
+    yield put(myProfileRequest({}));
+  } catch (error: any) {
+    yield put(cancelSubscriptionFailure(error));
+    ToastAlert(
+      error?.response?.data?.message || 'Cancel subscription failed',
+    );
+  }
+}
+
 export function* watchSubscriptionSaga(): Generator<any, void, any> {
   yield takeLatest(
     'Subscription/purchaseSubscriptionRequest',
@@ -131,4 +160,5 @@ export function* watchSubscriptionSaga(): Generator<any, void, any> {
   );
   yield takeLatest('Subscription/subscriptionsRequest', subscriptionsSaga);
   yield takeLatest('Subscription/getSectionDetailsRequest', getSectionDetailsSaga);
+  yield takeLatest('Subscription/cancelSubscriptionRequest', cancelSubscriptionSaga);
 }

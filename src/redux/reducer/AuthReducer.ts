@@ -10,12 +10,14 @@ export interface AuthState {
   signUpRes: {};
   loginRes?: {};
   verifyOTPRes: {};
+  resendOTPRes?: {};
   ResetPasswordRes?: {};
   ForgotPasswordRes?: {};
   deleteAccountRes?: {};
   socialLoginRes?: {};
   hasSeenOnboarding: boolean;
   lang: 'en' | 'es';
+  isNewRegistration: boolean;
 }
 
 const initialState: AuthState = {
@@ -27,12 +29,14 @@ const initialState: AuthState = {
   signUpRes: {},
   loginRes: {},
   verifyOTPRes: {},
+  resendOTPRes: {},
   ResetPasswordRes: {},
   ForgotPasswordRes: {},
   deleteAccountRes: {},
   socialLoginRes: {},
   hasSeenOnboarding: false,
   lang: 'en',
+  isNewRegistration: false,
 };
 
 const AuthSlice = createSlice({
@@ -95,6 +99,7 @@ const AuthSlice = createSlice({
     signupSuccess(state, action: PayloadAction<any>) {
       state.isReqLoading = false;
       state.signUpRes = action.payload;
+      state.isNewRegistration = true;
       state.status = action.type;
     },
     signupFailure(state, action: PayloadAction<any>) {
@@ -116,6 +121,22 @@ const AuthSlice = createSlice({
     verifyOTPFailure(state, action: PayloadAction<any>) {
       state.isReqLoading = false;
       state.error = action.payload?.error || 'verifyOTP failed';
+      state.status = action.type;
+    },
+
+    // resend OTP
+    resendOTPRequest(state, action: PayloadAction<any>) {
+      state.isReqLoading = true;
+      state.status = action.type;
+    },
+    resendOTPSuccess(state, action: PayloadAction<any>) {
+      state.isReqLoading = false;
+      state.resendOTPRes = action.payload;
+      state.status = action.type;
+    },
+    resendOTPFailure(state, action: PayloadAction<any>) {
+      state.isReqLoading = false;
+      state.error = action.payload?.error || 'Resend OTP failed';
       state.status = action.type;
     },
 
@@ -190,6 +211,9 @@ const AuthSlice = createSlice({
     setLanguage(state, action: PayloadAction<'en' | 'es'>) {
       state.lang = action.payload;
     },
+    clearNewRegistration(state) {
+      state.isNewRegistration = false;
+    },
   },
 });
 
@@ -218,6 +242,10 @@ export const {
   verifyOTPSuccess,
   verifyOTPFailure,
 
+  resendOTPRequest,
+  resendOTPSuccess,
+  resendOTPFailure,
+
   forgotPasswordRequest,
   forgotPasswordSuccess,
   forgotPasswordFailure,
@@ -232,6 +260,7 @@ export const {
 
   setOnboardingSeen,
   setLanguage,
+  clearNewRegistration,
 } = AuthSlice.actions;
 
 export default AuthSlice.reducer;

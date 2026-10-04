@@ -42,6 +42,7 @@ import {
 import { goBack, navigate } from '../../utils/helper/RootNavigation';
 import { cacheSignal } from 'react';
 import { getTokenSuccess } from '../reducer/AuthReducer';
+import { isSkipPremission } from '../reducer/SubscriptionReducer';
 
 const getItems = (state: any) => state.AuthReducer;
 
@@ -110,6 +111,7 @@ export function* myProfileSaga(
     const response: ApiResponse = yield call(getApi, 'my-profile', header);
     console.log('my-profile response:', response);
     yield put(myProfileSuccess(response?.data));
+    yield put(isSkipPremission(response?.data?.data?.is_skipped));
   } catch (error: any) {
     yield put(myProfileFailure(error));
     ToastAlert(error?.response?.data?.message || 'myProfile Failed');

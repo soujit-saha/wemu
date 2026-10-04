@@ -15,6 +15,8 @@ import {
   logoutSuccess,
   verifyOTPSuccess,
   verifyOTPFailure,
+  resendOTPSuccess,
+  resendOTPFailure,
   forgotPasswordSuccess,
   forgotPasswordFailure,
   resetPasswordSuccess,
@@ -213,6 +215,32 @@ export function* verifyOTPSaga(
   }
 }
 
+//resendOTP saga
+export function* resendOTPSaga(
+  action: PayloadAction<any>,
+): Generator<any, void, any> {
+  const header: ApiHeaders = {
+    Accept: 'application/json',
+    contenttype: 'multipart/form-data',
+  };
+  try {
+    const response: ApiResponse = yield call(
+      postApi,
+      'resend-otp',
+      action.payload,
+      header,
+    );
+
+    console.log('resend otp response', response);
+    yield put(resendOTPSuccess(response?.data));
+    ToastAlert(response?.data?.message || 'OTP sent successfully');
+  } catch (error: any) {
+    console.log(error);
+    yield put(resendOTPFailure(error));
+    ToastAlert(error?.response?.data?.message || 'Failed to resend OTP');
+  }
+}
+
 //logout saga
 export function* logoutSaga(
   action: PayloadAction<any>,
@@ -343,6 +371,7 @@ export function* watchAuthSaga(): Generator<any, void, any> {
   yield takeLatest('Auth/signupRequest', signupSaga);
   yield takeLatest('Auth/logoutRequest', logoutSaga);
   yield takeLatest('Auth/verifyOTPRequest', verifyOTPSaga);
+  yield takeLatest('Auth/resendOTPRequest', resendOTPSaga);
   yield takeLatest('Auth/forgotPasswordRequest', forgotPasswordSaga);
   yield takeLatest('Auth/resetPasswordRequest', resetPasswordSaga);
   yield takeLatest('Auth/deleteAccountRequest', deleteAccountSaga);

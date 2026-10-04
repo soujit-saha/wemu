@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -8,15 +8,17 @@ import {
   Image,
   ScrollView,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { useSelector, useDispatch } from 'react-redux';
 import LinearGradient from 'react-native-linear-gradient';
 import { COLORS, FONTS, ICONS } from '../../utils/constants';
 import { ms } from '../../utils/helper/metric';
 import FloatingPlayer from '../../component/FloatingPlayer';
 import { getArtistDetailsRequest, toggleArtistFollowRequest } from '../../redux/reducer/MainReducer';
+import { artistSongsRequest } from '../../redux/reducer/SongReducer';
 import Loader from '../../utils/helper/Loader';
 import { useTranslation } from '../../utils/hooks/useTranslation';
 import BannerAdComponent from '../../component/BannerAdComponent';
@@ -44,10 +46,24 @@ const ArtistsDetails = () => {
 
   const artistId = artist?.id || artist?.uuid || 4;
 
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [songsList, setSongsList] = useState<any[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const isFetchingMore = useRef(false);
+
   // Fetch artist details from API
   React.useEffect(() => {
     dispatch(getArtistDetailsRequest(artistId));
   }, [dispatch, artistId]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (artistId) {
+        dispatch(artistSongsRequest({ id: artistId, page, per_page: 15 }));
+      }
+    }, [dispatch, artistId, page])
+  );
 
   const { getDashboardRes, artistDetailsRes, isMainLoading } = useSelector(
     (state: any) => state.MainReducer
@@ -55,6 +71,31 @@ const ArtistsDetails = () => {
   const { sectionDetailsRes } = useSelector(
     (state: any) => state.SubscriptionReducer
   );
+  const { artistSongsRes, isSongLoading } = useSelector(
+    (state: any) => state.SongReducer
+  );
+
+  React.useEffect(() => {
+    if (!isSongLoading) {
+      isFetchingMore.current = false;
+    }
+  }, [isSongLoading]);
+
+  React.useEffect(() => {
+    if (artistSongsRes?.data?.result) {
+      const newSongs = artistSongsRes.data.result;
+      if (page === 1) {
+        setSongsList(newSongs);
+      } else {
+        setSongsList(prev => {
+          const existingIds = new Set(prev.map(s => s.id));
+          const uniqueNewSongs = newSongs.filter((s: any) => !existingIds.has(s.id));
+          return [...prev, ...uniqueNewSongs];
+        });
+      }
+      setHasMore(newSongs.length >= 15);
+    }
+  }, [artistSongsRes]);
 
   const artistData = artistDetailsRes?.data || artistDetailsRes || {};
 
@@ -68,11 +109,13 @@ const ArtistsDetails = () => {
       ? `${formatPlayCount(artistData.total_streams)} ${t('monthlyListeners')}`
       : artist?.total_followers
         ? `${formatPlayCount(artist.total_followers)} ${t('monthlyListeners')}`
-        : `1.3Cr ${t('monthlyListeners')}`;
+        : `0 ${t('monthlyListeners')}`;
 
   const [isFollowing, setIsFollowing] = useState(!!(artist?.is_followed || artist?.raw?.is_followed));
   const [isShuffle, setIsShuffle] = useState(false);
   const [activeTab, setActiveTab] = useState('Music');
+
+
 
   // Sync isFollowing state from API if available
   React.useEffect(() => {
@@ -86,91 +129,102 @@ const ArtistsDetails = () => {
   }, [artistData.is_followed, artist?.is_followed, artist?.raw?.is_followed]);
 
   // Collect and filter songs matching the artist
-  const artistSongs = React.useMemo(() => {
-    const list: any[] = [];
-    const seenIds = new Set<string>();
+  // const artistSongs = React.useMemo(() => {
+  //   const list: any[] = [];
+  //   const seenIds = new Set<string>();
 
-    const addSong = (song: any) => {
-      if (!song) return;
-      const id = song.id || song.uuid || song.title;
-      if (id && !seenIds.has(id)) {
-        seenIds.add(id);
-        list.push(song);
-      }
-    };
+  //   const addSong = (song: any) => {
+  //     if (!song) return;
+  //     const id = song.id || song.uuid || song.title;
+  //     if (id && !seenIds.has(id)) {
+  //       seenIds.add(id);
+  //       list.push(song);
+  //     }
+  //   };
 
-    // If API returns songs for the artist specifically, use them
-    const apiSongs = artistData.songs || artistData.items || [];
-    if (apiSongs.length > 0) {
-      return apiSongs.map((song: any, index: number) => {
-        // Provide mock play counts if they are 0 or empty for premium aesthetics
-        const mockPlayCounts = [342832913, 25925628, 12053429, 9832104, 4521098, 2341098, 891024];
-        return {
-          ...song,
-          play_count: song.play_count && song.play_count > 0
-            ? song.play_count
-            : mockPlayCounts[index % mockPlayCounts.length],
-          featured_artists: song.featured_artists || artistName,
-          artist: song.artist || { name: artistName }
-        };
-      });
-    }
+  //   // If API returns songs for the artist specifically, use them
+  //   let apiSongs = [];
+  //   if (artistSongsRes?.data?.data && Array.isArray(artistSongsRes.data.data)) {
+  //     apiSongs = [] //artistSongsRes.data.data;
+  //   } else if (artistSongsRes?.data && Array.isArray(artistSongsRes.data)) {
+  //     apiSongs = [] // artistSongsRes.data;
+  //   }
+  //   // else {
+  //   //   apiSongs = artistData.songs || artistData.items || [];
+  //   // }
 
-    // Otherwise, filter from dashboard songs
-    const dashSections = getDashboardRes?.data?.sections || getDashboardRes?.sections || [];
-    dashSections.forEach((sec: any) => {
-      if (sec.type === 'song' && Array.isArray(sec.items)) {
-        sec.items.forEach(addSong);
-      }
-    });
+  //   // if (apiSongs.length > 0) {
+  //   //   return apiSongs?.map((song: any, index: number) => {
+  //   //     // Provide mock play counts if they are 0 or empty for premium aesthetics
+  //   //     const mockPlayCounts = [342832913, 25925628, 12053429, 9832104, 4521098, 2341098, 891024];
+  //   //     return {
+  //   //       ...song,
+  //   //       play_count: song.play_count && song.play_count > 0
+  //   //         ? song.play_count
+  //   //         : mockPlayCounts[index % mockPlayCounts.length],
+  //   //       featured_artists: song.featured_artists || artistName,
+  //   //       artist: song.artist || { name: artistName }
+  //   //     };
+  //   //   });
+  //   // }
 
-    // Section details songs
-    const detailItems = Array.isArray(sectionDetailsRes)
-      ? sectionDetailsRes
-      : (sectionDetailsRes?.data?.items || sectionDetailsRes?.items || []);
-    detailItems.forEach((item: any) => {
-      if (item.audio_file_path || item.cover_image_path) {
-        addSong(item);
-      }
-    });
+  //   // Otherwise, filter from dashboard songs
+  //   const dashSections = getDashboardRes?.data?.sections || getDashboardRes?.sections || [];
+  //   dashSections.forEach((sec: any) => {
+  //     if (sec.type === 'song' && Array.isArray(sec.items)) {
+  //       sec.items.forEach(addSong);
+  //     }
+  //   });
 
-    // Filter by artist name match
-    const nameToMatch = artistName.toLowerCase();
-    const filtered = list.filter((song: any) => {
-      const artName = song.artist?.name || '';
-      const featArt = song.featured_artists || '';
-      const otherArt = song.other_artists || '';
-      return (
-        artName.toLowerCase().includes(nameToMatch) ||
-        featArt.toLowerCase().includes(nameToMatch) ||
-        otherArt.toLowerCase().includes(nameToMatch)
-      );
-    });
+  //   // Section details songs
+  //   const detailItems = Array.isArray(sectionDetailsRes)
+  //     ? sectionDetailsRes
+  //     : (sectionDetailsRes?.data?.items || sectionDetailsRes?.items || []);
+  //   detailItems.forEach((item: any) => {
+  //     if (item.audio_file_path || item.cover_image_path) {
+  //       addSong(item);
+  //     }
+  //   });
 
-    if (filtered.length > 0) {
-      return filtered;
-    }
+  //   // Filter by artist name match
+  //   const nameToMatch = artistName.toLowerCase();
+  //   const filtered = list.filter((song: any) => {
+  //     const artName = song.artist?.name || '';
+  //     const featArt = song.featured_artists || '';
+  //     const otherArt = song.other_artists || '';
+  //     return (
+  //       artName.toLowerCase().includes(nameToMatch) ||
+  //       featArt.toLowerCase().includes(nameToMatch) ||
+  //       otherArt.toLowerCase().includes(nameToMatch)
+  //     );
+  //   });
 
-    // Fallback: map standard tracks to this artist so the user can play actual files
-    return list.slice(0, 8).map((song, index) => {
-      const mockPlayCounts = [342832913, 25925628, 12053429, 9832104, 4521098, 2341098, 891024];
-      return {
-        ...song,
-        play_count: mockPlayCounts[index % mockPlayCounts.length],
-        featured_artists: artistName,
-        other_artists: 'Web Artist',
-        artist: {
-          ...(song.artist || {}),
-          name: artistName,
-        },
-      };
-    });
-  }, [getDashboardRes, sectionDetailsRes, artistName, artistData]);
+  //   if (filtered.length > 0) {
+  //     return filtered;
+  //   }
+
+  //   // Fallback: map standard tracks to this artist so the user can play actual files
+  //   return list.slice(0, 8).map((song, index) => {
+  //     const mockPlayCounts = [342832913, 25925628, 12053429, 9832104, 4521098, 2341098, 891024];
+  //     return {
+  //       ...song,
+  //       play_count: mockPlayCounts[index % mockPlayCounts.length],
+  //       featured_artists: artistName,
+  //       other_artists: 'Web Artist',
+  //       artist: {
+  //         ...(song.artist || {}),
+  //         name: artistName,
+  //       },
+  //     };
+  //   });
+  // }, [getDashboardRes, sectionDetailsRes, artistName, artistData]);
+
+  // console.log('12345678', artistSongs)
 
   return (
     <SafeAreaView style={styles.container} edges={[]}>
       <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
-      <Loader visible={isMainLoading} />
+      <Loader visible={isMainLoading || isSongLoading} />
 
       {/* Floating Back Button */}
       <TouchableOpacity
@@ -184,6 +238,16 @@ const ArtistsDetails = () => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContainer}
+        onScroll={({ nativeEvent }) => {
+          const paddingToBottom = 200;
+          const isCloseToBottom = nativeEvent.layoutMeasurement.height + nativeEvent.contentOffset.y >=
+            nativeEvent.contentSize.height - paddingToBottom;
+          if (isCloseToBottom && !isSongLoading && hasMore && !isFetchingMore.current) {
+            isFetchingMore.current = true;
+            setPage(prev => prev + 1);
+          }
+        }}
+        scrollEventThrottle={16}
       >
         {/* Cover Section */}
         <View style={styles.coverWrapper}>
@@ -251,7 +315,8 @@ const ArtistsDetails = () => {
               {isFollowing ? t('following') : t('follow')}
             </Text>
           </TouchableOpacity>
-
+          <View style={styles.iconActionButton} />
+          <View style={styles.iconActionButton} />
           {/* More options button */}
           {/* <TouchableOpacity style={styles.iconActionButton} activeOpacity={0.7}>
             <Text style={styles.moreActionText}>⋮</Text>
@@ -276,8 +341,8 @@ const ArtistsDetails = () => {
           <TouchableOpacity
             style={styles.greenPlayButton}
             onPress={() => {
-              if (artistSongs.length > 0) {
-                navigation.navigate('MusicPlay', { track: artistSongs[0], fromScreen: 'ArtistsDetails' });
+              if (songsList?.length > 0) {
+                navigation.navigate('MusicPlay', { track: songsList[0], fromScreen: 'ArtistsDetails' });
               }
             }}
             activeOpacity={0.8}
@@ -336,15 +401,19 @@ const ArtistsDetails = () => {
         </View>
 
         {/* Popular Tracks Section */}
-        {activeTab === 'Music' && (
-          <View style={styles.popularSection}>
-            <Text style={styles.popularTitle}>{t('popular')}</Text>
+        <View style={styles.popularSection}>
+          <Text style={styles.popularTitle}>{t('popular')}</Text>
 
-            <View style={styles.tracksList}>
-              {artistSongs.map((song: any, index: any) => {
+          <View style={styles.tracksList}>
+            {songsList?.length === 0 && !isSongLoading ? (
+              <View style={{ paddingVertical: ms(20), alignItems: 'center' }}>
+                <Text style={{ color: '#808191', fontFamily: FONTS.regular24 }}>No data found</Text>
+              </View>
+            ) : (
+              songsList?.map((song: any, index: any) => {
                 const trackNum = index + 1;
                 const coverImage = song.cover_image_path || song.image || 'https://picsum.photos/100/100?random=song';
-                const playCount = formatPlayCount(song.play_count);
+                // const playCount = formatPlayCount(song.play_count);
 
                 return (
                   <TouchableOpacity
@@ -362,10 +431,10 @@ const ArtistsDetails = () => {
                     {/* Track Details */}
                     <View style={styles.trackDetails}>
                       <Text style={styles.trackTitle} numberOfLines={1}>
-                        {song.title}
+                        {song?.title}
                       </Text>
                       <Text style={styles.trackPlays} numberOfLines={1}>
-                        {playCount}
+                        {song?.play_count}
                       </Text>
                     </View>
 
@@ -375,8 +444,14 @@ const ArtistsDetails = () => {
                     </TouchableOpacity> */}
                   </TouchableOpacity>
                 );
-              })}
-            </View>
+              })
+            )}
+          </View>
+        </View>
+
+        {isSongLoading && page > 1 && (
+          <View style={{ paddingVertical: ms(20), alignItems: 'center' }}>
+            <ActivityIndicator size="small" color="#6337EB" />
           </View>
         )}
 

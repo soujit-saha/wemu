@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, Image, StatusBar, TouchableOpacity, Dimensions, ScrollView, PanResponder } from 'react-native';
+import { StyleSheet, Text, View, Image, StatusBar, TouchableOpacity, Dimensions, ScrollView, PanResponder, Modal, TouchableWithoutFeedback, FlatList, ActivityIndicator } from 'react-native';
 import React, { useState, useEffect, useRef } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,9 +9,10 @@ import { ms } from '../../utils/helper/metric';
 import TrackPlayer, { Capability, State, usePlaybackState, useProgress, AppKilledPlaybackBehavior, useActiveTrack, Event, useTrackPlayerEvents, RepeatMode } from 'react-native-track-player';
 import { useTranslation } from '../../utils/hooks/useTranslation';
 import { toggleSongLikeRequest, toggleArtistFollowRequest } from '../../redux/reducer/MainReducer';
-import { getPlayerQueueRequest } from '../../redux/reducer/SongReducer';
+import { getPlayerQueueRequest, increasePlayCountRequest, myPlaylistsRequest, addRemovePlaylistSongRequest, skipRequest } from '../../redux/reducer/SongReducer';
 import Loader from '../../utils/helper/Loader';
 import BannerAdComponent from '../../component/BannerAdComponent';
+import ToastAlert from '../../utils/helper/Toast';
 
 const MusicPlay = () => {
     const insets = useSafeAreaInsets();
@@ -19,7 +20,10 @@ const MusicPlay = () => {
     const route = useRoute<any>();
     const dispatch = useDispatch();
     const { t } = useTranslation();
-
+    const { myPlaylistsRes, albumsRes, artistsRes, isLoading } = useSelector(
+        (state: any) => state.SongReducer,
+    );
+    const isSkipPremission = useSelector((state: any) => state.SubscriptionReducer?.isSkipPremission);
     const [track, setTrack] = useState(route.params?.track);
 
     useEffect(() => {
@@ -95,6 +99,7 @@ const MusicPlay = () => {
 
     const [isPlayerReady, setIsPlayerReady] = useState(false);
     const [isLiked, setIsLiked] = useState(!!(track?.is_liked || track?.raw?.is_liked));
+    const [isMenuModalVisible, setIsMenuModalVisible] = useState(false);
     const [isArtistFollowing, setIsArtistFollowing] = useState(!!(track?.artist?.is_followed || track?.artist?.raw?.is_followed));
     const [showLyrics, setShowLyrics] = useState(false);
     const [expandLyrics, setExpandLyrics] = useState(false);
@@ -116,6 +121,49 @@ const MusicPlay = () => {
 
     const [isShuffle, setIsShuffle] = useState(false);
     const [repeatMode, setRepeatMode] = useState(RepeatMode.Off);
+
+    const [isPlaylistModalVisible, setIsPlaylistModalVisible] = useState(false);
+    const [playlistPage, setPlaylistPage] = useState(1);
+    const [localPlaylists, setLocalPlaylists] = useState<any[]>([]);
+
+    const per_page = 15;
+
+    const fetchPlaylists = (pageNum: number) => {
+        dispatch(myPlaylistsRequest({ page: pageNum, per_page, keyword: '' }));
+    };
+
+    useEffect(() => {
+        if (isPlaylistModalVisible) {
+            setPlaylistPage(1);
+            setLocalPlaylists([]);
+            fetchPlaylists(1);
+        }
+    }, [isPlaylistModalVisible]);
+
+    useEffect(() => {
+        if (myPlaylistsRes?.data?.result || myPlaylistsRes?.data) {
+            let newData = myPlaylistsRes?.data?.result || myPlaylistsRes?.data || [];
+            if (!Array.isArray(newData)) newData = [];
+
+            if (playlistPage === 1) {
+                setLocalPlaylists(newData);
+            } else {
+                setLocalPlaylists(prev => {
+                    const existingIds = new Set(prev.map(p => p.id));
+                    const filtered = newData.filter((n: any) => !existingIds.has(n.id));
+                    return [...prev, ...filtered];
+                });
+            }
+        }
+    }, [myPlaylistsRes, playlistPage]);
+
+    const loadMorePlaylists = () => {
+        if (!isLoading && localPlaylists.length > 0 && localPlaylists.length % per_page === 0) {
+            const nextPage = playlistPage + 1;
+            setPlaylistPage(nextPage);
+            fetchPlaylists(nextPage);
+        }
+    };
 
     const toggleShuffle = () => {
         setIsShuffle(!isShuffle);
@@ -192,6 +240,10 @@ const MusicPlay = () => {
     useEffect(() => {
         setIsLiked(!!(track?.is_liked || track?.raw?.is_liked));
         setIsArtistFollowing(!!(track?.artist?.is_followed || track?.artist?.raw?.is_followed));
+
+        if (track?.id) {
+            dispatch(increasePlayCountRequest({ id: track.id }));
+        }
     }, [track]);
 
     const isSeeking = lastSeekPositionRef.current !== null &&
@@ -395,7 +447,12 @@ const MusicPlay = () => {
     };
 
     const handleSkipNext = async () => {
+        if (!isSkipPremission) {
+            ToastAlert("You not allow to do more with current plan");
+            return;
+        }
         try {
+            dispatch(skipRequest({}));
             const queue = await TrackPlayer.getQueue();
             const currentTrackIndex = await TrackPlayer?.getCurrentTrack();
 
@@ -424,7 +481,12 @@ const MusicPlay = () => {
     });
 
     const handleSkipPrevious = async () => {
+        if (!isSkipPremission) {
+            ToastAlert("You not allow to do more with this plan");
+            return;
+        }
         try {
+            dispatch(skipRequest({}));
             const queue = await TrackPlayer.getQueue();
             const currentTrackIndex = await TrackPlayer?.getCurrentTrack();
 
@@ -598,7 +660,7 @@ const MusicPlay = () => {
                             <Text style={styles.headerTitle}>{t('nowPlaying')}</Text>
 
                             <TouchableOpacity
-                                onPress={() => navigation.navigate('Share')}
+                                onPress={() => setIsMenuModalVisible(true)}
                                 style={[styles.headerButton, { alignItems: 'flex-end' }]}
                                 activeOpacity={0.7}
                             >
@@ -692,7 +754,7 @@ const MusicPlay = () => {
                             {/* Skip Previous */}
                             <TouchableOpacity
                                 onPress={handleSkipPrevious}
-                                style={styles.controlButton}
+                                style={[styles.controlButton, { opacity: isSkipPremission ? 1 : 0.5 }]}
                                 activeOpacity={0.7}
                             >
                                 <PrevIcon />
@@ -710,7 +772,7 @@ const MusicPlay = () => {
                             {/* Skip Next */}
                             <TouchableOpacity
                                 onPress={handleSkipNext}
-                                style={styles.controlButton}
+                                style={[styles.controlButton, { opacity: isSkipPremission ? 1 : 0.5 }]}
                                 activeOpacity={0.7}
                             >
                                 <NextIcon />
@@ -818,11 +880,109 @@ const MusicPlay = () => {
                                 : `0 ${t('followers').toLowerCase()}`}
                         </Text>
                         <Text style={styles.artistBio} numberOfLines={3}>
-                            {track?.artist?.bio || "No biography available for this artist."}
+                            {track?.artist?.bio || t('noBiography')}
                         </Text>
                     </View>
                 </TouchableOpacity>
             </ScrollView>
+
+            <Modal
+                visible={isMenuModalVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setIsMenuModalVisible(false)}
+            >
+                <TouchableWithoutFeedback onPress={() => setIsMenuModalVisible(false)}>
+                    <View style={styles.modalOverlay}>
+                        <TouchableWithoutFeedback>
+                            <View style={styles.modalContent}>
+                                <TouchableOpacity
+                                    style={styles.modalOption}
+                                    onPress={() => {
+                                        setIsMenuModalVisible(false);
+                                        setIsPlaylistModalVisible(true);
+                                    }}
+                                >
+                                    <Text style={styles.modalOptionText}>{t('addToPlaylist')}</Text>
+                                </TouchableOpacity>
+                                <View style={styles.modalDivider} />
+                                <TouchableOpacity
+                                    style={styles.modalOption}
+                                    onPress={() => {
+                                        setIsMenuModalVisible(false);
+                                        navigation.navigate('Share');
+                                    }}
+                                >
+                                    <Text style={styles.modalOptionText}>{t('share')}</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </TouchableWithoutFeedback>
+                    </View>
+                </TouchableWithoutFeedback>
+            </Modal>
+
+            {/* Playlist Modal */}
+            <Modal
+                visible={isPlaylistModalVisible}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={() => setIsPlaylistModalVisible(false)}
+            >
+                <TouchableWithoutFeedback onPress={() => setIsPlaylistModalVisible(false)}>
+                    <View style={styles.playlistModalOverlay}>
+                        <TouchableWithoutFeedback>
+                            <View style={styles.playlistModalContent}>
+                                <View style={styles.playlistModalHeader}>
+                                    <Text style={styles.playlistModalTitle}>{t('playlists') || 'Playlists'}</Text>
+                                    <TouchableOpacity onPress={() => setIsPlaylistModalVisible(false)}>
+                                        <Text style={styles.playlistModalClose}>{t('close')}</Text>
+                                    </TouchableOpacity>
+                                </View>
+
+                                <FlatList
+                                    data={localPlaylists}
+                                    keyExtractor={(item, index) => item.id?.toString() || index.toString()}
+                                    showsVerticalScrollIndicator={false}
+                                    onEndReached={loadMorePlaylists}
+                                    onEndReachedThreshold={0.5}
+                                    ListFooterComponent={isLoading ? <ActivityIndicator size="small" color="#FFFFFF" style={{ marginVertical: ms(10) }} /> : null}
+                                    renderItem={({ item }) => (
+                                        <View
+                                            style={styles.playlistItem}
+
+                                        >
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: ms(10), flex: 1 }}>
+                                                <Image
+                                                    source={{ uri: item.cover_image_path || item.cover_image }}
+                                                    style={{ height: ms(40), width: ms(40), borderRadius: ms(4) }}
+                                                />
+                                                <Text style={styles.playlistItemTitle} numberOfLines={1}>{item.title || item.name}</Text>
+                                            </View>
+                                            <TouchableOpacity style={styles.addPlaylistButton}
+                                                onPress={() => {
+                                                    setIsPlaylistModalVisible(false);
+                                                    if (track?.id) {
+                                                        dispatch(
+                                                            addRemovePlaylistSongRequest({
+                                                                playlist_id: item.id,
+                                                                song_ids: [track.id],
+                                                                action: 'add',
+                                                            }),
+                                                        );
+                                                    }
+                                                }}
+                                            >
+                                                <Text style={styles.addPlaylistButtonText}>{t('add') || 'Add'}</Text>
+                                            </TouchableOpacity>
+
+                                        </View>
+                                    )}
+                                />
+                            </View>
+                        </TouchableWithoutFeedback>
+                    </View>
+                </TouchableWithoutFeedback>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -1283,6 +1443,88 @@ const styles = StyleSheet.create({
         fontFamily: FONTS.bold24,
         color: '#FFFFFF',
     },
-
-
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'flex-end',
+    },
+    modalContent: {
+        backgroundColor: COLORS.playGradientEnd || '#121212',
+        borderTopLeftRadius: ms(20),
+        borderTopRightRadius: ms(20),
+        paddingVertical: ms(20),
+        paddingHorizontal: ms(24),
+    },
+    modalOption: {
+        paddingVertical: ms(16),
+        justifyContent: 'center',
+    },
+    modalOptionText: {
+        fontFamily: FONTS.medium24,
+        fontSize: ms(16),
+        color: '#FFFFFF',
+    },
+    modalDivider: {
+        height: ms(1),
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        marginVertical: ms(4),
+    },
+    playlistModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    playlistModalContent: {
+        backgroundColor: COLORS.playGradientEnd || '#121212',
+        borderTopLeftRadius: ms(20),
+        borderTopRightRadius: ms(20),
+        height: Dimensions.get('window').height * 0.6,
+        paddingTop: ms(20),
+        paddingHorizontal: ms(24),
+    },
+    playlistModalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: ms(16),
+    },
+    playlistModalTitle: {
+        fontFamily: FONTS.bold28,
+        fontSize: ms(18),
+        color: '#FFFFFF',
+    },
+    playlistModalClose: {
+        fontFamily: FONTS.regular24,
+        fontSize: ms(14),
+        color: 'rgba(255,255,255,0.7)',
+    },
+    playlistItem: {
+        paddingVertical: ms(16),
+        borderBottomWidth: ms(1),
+        borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    playlistItemInfo: {
+        flex: 1,
+    },
+    playlistItemTitle: {
+        fontFamily: FONTS.medium24,
+        fontSize: ms(16),
+        color: '#FFFFFF',
+        flex: 1,
+    },
+    addPlaylistButton: {
+        backgroundColor: '#FFFFFF',
+        paddingHorizontal: ms(16),
+        paddingVertical: ms(6),
+        borderRadius: ms(6),
+        marginLeft: ms(12),
+    },
+    addPlaylistButtonText: {
+        fontFamily: FONTS.bold24,
+        fontSize: ms(12),
+        color: '#000000',
+    },
 });

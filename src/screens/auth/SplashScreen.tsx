@@ -93,17 +93,20 @@ const styles = StyleSheet.create({
     },
     brandName: {
         fontFamily: FONTS.medium24,
-        fontSize: ms(26),
-        color: '#ffef10ff', // Wemu purple
+        fontSize: ms(28),
+        fontWeight: 'bold',
+        color: '#0a635d', // Dark teal color
         marginTop: ms(14),
         includeFontPadding: false,
-        backgroundColor: '#000000'
+        textShadowColor: 'rgba(0, 0, 0, 0.5)',
+        textShadowOffset: { width: 0, height: 3 },
+        textShadowRadius: 5,
     },
     subtitle: {
         fontFamily: FONTS.medium24,
         fontSize: ms(16),
         color: '#0082E6', // Sky blue subtitle accent
-        marginTop: ms(8),
+        marginTop: ms(12),
         includeFontPadding: false,
     },
     bottomWave: {

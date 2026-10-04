@@ -28,9 +28,14 @@ import {
   getPlayerQueueSuccess,
   getSongsByAlbumFailure,
   getSongsByAlbumSuccess,
+  getArtistSongsFailure,
+  getArtistSongsSuccess,
+  skipSongFailure,
+  skipSongSuccess,
 } from '../reducer/SongReducer';
 import { getApi, postApi } from '../../utils/helper/ApiRequest';
 import { goBack } from '../../utils/helper/RootNavigation';
+import { isSkipPremission } from '../reducer/SubscriptionReducer';
 
 const getItems = (state: any) => state.AuthReducer;
 
@@ -342,6 +347,37 @@ export function* getPlayerQueueSaga(
   }
 }
 
+export function* getArtistSongsSaga(
+  action: PayloadAction<any>,
+): Generator<any, void, any> {
+  const item = yield select(getItems);
+  const header: ApiHeaders = {
+    Accept: 'application/json',
+    contenttype: 'application/json',
+    accesstoken: item.getTokenResponse,
+  };
+
+  try {
+    const artistId = action.payload?.id ?? action.payload;
+    const page = action.payload?.page || 1;
+    const perPage = action.payload?.per_page || 15;
+
+    console.log('123456', `artist/songs/${artistId}?page=${page}&per_page=${perPage}`)
+    const response: ApiResponse = yield call(
+      getApi,
+      `artist/songs/${artistId}?page=${page}&per_page=${perPage}`,
+      header,
+    );
+
+    yield put(getArtistSongsSuccess(response?.data));
+  } catch (error: any) {
+    yield put(getArtistSongsFailure(error));
+    ToastAlert(
+      error?.response?.data?.message || 'Failed to fetch artist songs',
+    );
+  }
+}
+
 export function* getSongsByAlbumSaga(
   action: PayloadAction<any>,
 ): Generator<any, void, any> {
@@ -370,6 +406,33 @@ export function* getSongsByAlbumSaga(
   }
 }
 
+export function* skipSongSaga(
+  action: PayloadAction<any>,
+): Generator<any, void, any> {
+  const item = yield select(getItems);
+  const header: ApiHeaders = {
+    Accept: 'application/json',
+    contenttype: 'application/json',
+    accesstoken: item.getTokenResponse,
+  };
+
+  try {
+    const response: ApiResponse = yield call(
+      getApi,
+      `song/skip`,
+      header,
+    );
+
+    yield put(skipSongSuccess(response?.data));
+    yield put(isSkipPremission(response?.data?.data?.is_skipped));
+  } catch (error: any) {
+    yield put(skipSongFailure(error));
+    ToastAlert(
+      error?.response?.data?.message || 'Skip song failed',
+    );
+  }
+}
+
 export function* watchSongSaga(): Generator<any, void, any> {
   yield takeLatest('Song/increasePlayCountRequest', increasePlayCountSaga);
   yield takeLatest('Song/searchSongRequest', searchSongSaga);
@@ -389,4 +452,6 @@ export function* watchSongSaga(): Generator<any, void, any> {
   yield takeLatest('Song/getSongsToAddRequest', getSongsToAddSaga);
   yield takeLatest('Song/getPlayerQueueRequest', getPlayerQueueSaga);
   yield takeLatest('Song/getSongsByAlbumRequest', getSongsByAlbumSaga);
+  yield takeLatest('Song/getArtistSongsRequest', getArtistSongsSaga);
+  yield takeLatest('Song/skipSongRequest', skipSongSaga);
 }
