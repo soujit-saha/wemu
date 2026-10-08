@@ -20,6 +20,7 @@ import FloatingPlayer from '../../component/FloatingPlayer';
 import { useTranslation } from '../../utils/hooks/useTranslation';
 import { searchSongRequest } from '../../redux/reducer/SongReducer';
 import BannerAdComponent from '../../component/BannerAdComponent';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
@@ -415,13 +416,14 @@ const Search = () => {
                       key={songId}
                       style={styles.songRow}
                       activeOpacity={0.7}
-                      onPress={() =>
-                        navigation.navigate('MusicPlay', {
+                      onPress={async () => {
+                        await AsyncStorage.setItem('musicPlayParams', JSON.stringify({
                           track: song.raw || song,
                           fromScreen: 'Search',
                           keyword: searchText,
-                        })
-                      }
+                        }));
+                        navigation.navigate('MusicPlay');
+                      }}
                     >
                       <Image source={{ uri: image }} style={styles.songImage} />
                       <View style={styles.songDetails}>

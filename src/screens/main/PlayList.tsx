@@ -19,6 +19,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { COLORS, FONTS, ICONS } from '../../utils/constants';
 import { ms } from '../../utils/helper/metric';
 import { useTranslation } from '../../utils/hooks/useTranslation';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   getPlaylistDetailsRequest,
   addRemovePlaylistSongRequest,
@@ -30,6 +31,7 @@ import TrackPlayer, {
   useActiveTrack,
 } from 'react-native-track-player';
 import BannerAdComponent from '../../component/BannerAdComponent';
+import FloatingPlayer from '../../component/FloatingPlayer';
 
 const PlayList = () => {
   const navigation = useNavigation<any>();
@@ -187,7 +189,8 @@ const PlayList = () => {
           const currentPlaying =
             tracks.find((t: any) => t.id?.toString() === activeTrack?.id) ||
             tracks[0];
-          navigation.navigate('MusicPlay', { track: currentPlaying, fromScreen: 'PlayList' });
+          await AsyncStorage.setItem('musicPlayParams', JSON.stringify({ track: currentPlaying, fromScreen: 'PlayList' }));
+          navigation.navigate('MusicPlay');
         }
       } else {
         await TrackPlayer.reset();
@@ -217,7 +220,8 @@ const PlayList = () => {
         await TrackPlayer.play();
 
         // Navigate to the full screen player with the first song
-        navigation.navigate('MusicPlay', { track: tracks[0], fromScreen: 'PlayList' });
+        await AsyncStorage.setItem('musicPlayParams', JSON.stringify({ track: tracks[0], fromScreen: 'PlayList' }));
+        navigation.navigate('MusicPlay');
       }
     } catch (error) {
       console.error('Error playing playlist:', error);
@@ -238,7 +242,8 @@ const PlayList = () => {
         if (!isPlaying) {
           await TrackPlayer.play();
         }
-        navigation.navigate('MusicPlay', { track, fromScreen: 'PlayList' });
+        await AsyncStorage.setItem('musicPlayParams', JSON.stringify({ track, fromScreen: 'PlayList' }));
+        navigation.navigate('MusicPlay');
         return;
       }
 
@@ -266,7 +271,8 @@ const PlayList = () => {
       await TrackPlayer.skip(index);
       await TrackPlayer.play();
 
-      navigation.navigate('MusicPlay', { track, fromScreen: 'PlayList' });
+      await AsyncStorage.setItem('musicPlayParams', JSON.stringify({ track, fromScreen: 'PlayList' }));
+      navigation.navigate('MusicPlay');
     } catch (error) {
       console.error('Error playing specific song:', error);
     }
@@ -433,7 +439,7 @@ const PlayList = () => {
           </View>
         </ScrollView>
       )}
-
+      <FloatingPlayer />
       {/* Remove Song Modal */}
       <Modal visible={isPopupVisible} transparent={true} animationType="fade">
         <TouchableOpacity

@@ -23,6 +23,7 @@ import { ms } from '../../utils/helper/metric';
 import FloatingPlayer from '../../component/FloatingPlayer';
 import { useTranslation } from '../../utils/hooks/useTranslation';
 import BannerAdComponent from '../../component/BannerAdComponent';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface TrackItem {
   id: string;
@@ -149,7 +150,8 @@ const Album = () => {
           const currentPlaying =
             localItems.find((t: any) => t.id?.toString() === activeTrack?.id) ||
             localItems[0];
-          navigation.navigate('MusicPlay', { track: currentPlaying, fromScreen: 'Album' });
+          await AsyncStorage.setItem('musicPlayParams', JSON.stringify({ track: currentPlaying, fromScreen: 'Album' }));
+          navigation.navigate('MusicPlay');
         }
       } else {
         await TrackPlayer.reset();
@@ -177,7 +179,8 @@ const Album = () => {
         await TrackPlayer.add(trackQueue);
         await TrackPlayer.play();
 
-        navigation.navigate('MusicPlay', { track: localItems[0], fromScreen: 'Album' });
+        await AsyncStorage.setItem('musicPlayParams', JSON.stringify({ track: localItems[0], fromScreen: 'Album' }));
+        navigation.navigate('MusicPlay');
       }
     } catch (error) {
       console.error('Error playing album:', error);
@@ -197,7 +200,8 @@ const Album = () => {
         if (!isPlaying) {
           await TrackPlayer.play();
         }
-        navigation.navigate('MusicPlay', { track, fromScreen: 'Album' });
+        await AsyncStorage.setItem('musicPlayParams', JSON.stringify({ track, fromScreen: 'Album' }));
+        navigation.navigate('MusicPlay');
         return;
       }
 
@@ -225,7 +229,8 @@ const Album = () => {
       await TrackPlayer.skip(index);
       await TrackPlayer.play();
 
-      navigation.navigate('MusicPlay', { track, fromScreen: 'Album' });
+      await AsyncStorage.setItem('musicPlayParams', JSON.stringify({ track, fromScreen: 'Album' }));
+      navigation.navigate('MusicPlay');
     } catch (error) {
       console.error('Error playing specific song:', error);
     }

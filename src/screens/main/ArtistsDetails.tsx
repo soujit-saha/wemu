@@ -22,6 +22,7 @@ import { artistSongsRequest } from '../../redux/reducer/SongReducer';
 import Loader from '../../utils/helper/Loader';
 import { useTranslation } from '../../utils/hooks/useTranslation';
 import BannerAdComponent from '../../component/BannerAdComponent';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
@@ -340,9 +341,10 @@ const ArtistsDetails = () => {
           {/* Big Green Play Button */}
           <TouchableOpacity
             style={styles.greenPlayButton}
-            onPress={() => {
+            onPress={async () => {
               if (songsList?.length > 0) {
-                navigation.navigate('MusicPlay', { track: songsList[0], fromScreen: 'ArtistsDetails' });
+                await AsyncStorage.setItem('musicPlayParams', JSON.stringify({ track: songsList[0], fromScreen: 'ArtistsDetails' }));
+                navigation.navigate('MusicPlay');
               }
             }}
             activeOpacity={0.8}
@@ -420,7 +422,10 @@ const ArtistsDetails = () => {
                     key={song.id || index}
                     style={styles.trackRow}
                     activeOpacity={0.7}
-                    onPress={() => navigation.navigate('MusicPlay', { track: song, fromScreen: 'ArtistsDetails' })}
+                    onPress={async () => {
+                      await AsyncStorage.setItem('musicPlayParams', JSON.stringify({ track: song, fromScreen: 'ArtistsDetails' }));
+                      navigation.navigate('MusicPlay');
+                    }}
                   >
                     {/* Track Number */}
                     <Text style={styles.trackIndex}>{trackNum}</Text>

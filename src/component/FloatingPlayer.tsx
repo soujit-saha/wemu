@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -12,6 +12,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import TrackPlayer, { State, useActiveTrack, usePlaybackState } from 'react-native-track-player';
 import { COLORS, FONTS } from '../utils/constants';
 import { ms } from '../utils/helper/metric';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const FloatingPlayer = () => {
   const insets = useSafeAreaInsets();
@@ -20,6 +21,30 @@ const FloatingPlayer = () => {
   
   const activeTrack = useActiveTrack();
   const playbackState = usePlaybackState();
+
+  useEffect(() => {
+    const updateStorage = async () => {
+      if (activeTrack) {
+        try {
+          const storedParams = await AsyncStorage.getItem('musicPlayParams');
+          let parsed: any = {};
+          if (storedParams) {
+            parsed = JSON.parse(storedParams);
+          }
+          
+          if (parsed.track?.id !== activeTrack.id && parsed.track?.id?.toString() !== activeTrack.id) {
+            // Wait, we need to handle activeTrack structure, which might be nested or have raw data inside 'track'
+            // The raw API response is usually kept in activeTrack.track
+            parsed.track = (activeTrack as any).track || activeTrack;
+            await AsyncStorage.setItem('musicPlayParams', JSON.stringify(parsed));
+          }
+        } catch (e) {
+          console.error("Error updating musicPlayParams in FloatingPlayer", e);
+        }
+      }
+    };
+    updateStorage();
+  }, [activeTrack]);
 
   // If no track is loaded, don't show the floating player
   if (!activeTrack) {
@@ -49,7 +74,7 @@ const FloatingPlayer = () => {
     <TouchableOpacity
       style={[styles.floatingPlayer, { bottom: ms(66) + insets.bottom + ms(8) }]}
       activeOpacity={0.9}
-      onPress={() => navigation.navigate('MusicPlay', { track: activeTrack, fromScreen: route.name })}
+      onPress={() => navigation.navigate('MusicPlay')}
     >
       <LinearGradient
         colors={[COLORS.playGradientStart, COLORS.playGradientMiddle, COLORS.playGradientEnd]}

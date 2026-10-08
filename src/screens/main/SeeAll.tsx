@@ -20,6 +20,7 @@ import FloatingPlayer from '../../component/FloatingPlayer';
 import Loader from '../../utils/helper/Loader';
 import { getSectionDetailsRequest } from '../../redux/reducer/SubscriptionReducer';
 import { useTranslation } from '../../utils/hooks/useTranslation';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
@@ -147,7 +148,10 @@ const SeeAll = () => {
     <TouchableOpacity
       style={styles.trackRow}
       activeOpacity={0.7}
-      onPress={() => navigation.navigate('MusicPlay', { track: track.raw || track, fromScreen: 'SeeAll', type_id: type_id })}
+      onPress={async () => {
+        await AsyncStorage.setItem('musicPlayParams', JSON.stringify({ track: track.raw || track, fromScreen: 'SeeAll', type_id: type_id }));
+        navigation.navigate('MusicPlay');
+      }}
     >
       <Image source={{ uri: track.image }} style={styles.trackArt} />
       <View style={styles.trackDetails}>

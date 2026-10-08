@@ -265,6 +265,7 @@ export function* logoutSaga(
     }
 
     yield call(AsyncStorage.removeItem, constants.TOKEN);
+    yield call(AsyncStorage.removeItem, 'musicPlayParams');
     yield put(getTokenSuccess(null)); // Provide default empty token instead of null
     yield put(logoutSuccess({ message: 'logout', success: true }));
     // if (action.payload.showMsg) {

@@ -13,6 +13,7 @@ import { getPlayerQueueRequest, increasePlayCountRequest, myPlaylistsRequest, ad
 import Loader from '../../utils/helper/Loader';
 import BannerAdComponent from '../../component/BannerAdComponent';
 import ToastAlert from '../../utils/helper/Toast';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const MusicPlay = () => {
     const insets = useSafeAreaInsets();
@@ -24,13 +25,26 @@ const MusicPlay = () => {
         (state: any) => state.SongReducer,
     );
     const isSkipPremission = useSelector((state: any) => state.SubscriptionReducer?.isSkipPremission);
-    const [track, setTrack] = useState(route.params?.track);
+    const [track, setTrack] = useState<any>(undefined);
+    const [asyncParams, setAsyncParams] = useState<any>({});
 
     useEffect(() => {
-        if (route.params?.track) {
-            setTrack(route.params.track);
-        }
-    }, [route.params?.track]);
+        const fetchParams = async () => {
+            try {
+                const storedParams = await AsyncStorage.getItem('musicPlayParams');
+                if (storedParams) {
+                    const parsed = JSON.parse(storedParams);
+                    setAsyncParams(parsed);
+                    if (parsed.track) {
+                        setTrack(parsed.track);
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to fetch musicPlayParams from AsyncStorage", e);
+            }
+        };
+        fetchParams();
+    }, []);
     const trackTitle = track?.title || 'Blinding Lights';
 
     const artistName = track?.featured_artists
@@ -193,9 +207,9 @@ const MusicPlay = () => {
             pageRef.current = nextPage;
         }
 
-        const fromScreen = route.params?.fromScreen || '';
-        const typeIdParam = route.params?.type_id || '';
-        const keywordParam = route.params?.keyword || '';
+        const fromScreen = asyncParams?.fromScreen || '';
+        const typeIdParam = asyncParams?.type_id || '';
+        const keywordParam = asyncParams?.keyword || '';
 
         let sourceType = track?.source_type || 'album';
         if (fromScreen === 'Home') {
@@ -404,7 +418,7 @@ const MusicPlay = () => {
                     };
                 });
 
-                console.log("Local array created (tracksToAdd):", JSON.stringify(tracksToAdd, null, 2));
+                // console.log("Local array created (tracksToAdd):", JSON.stringify(tracksToAdd, null, 2));
 
                 const queue = await TrackPlayer.getQueue();
                 const newStartIndex = queue.length;
@@ -616,7 +630,8 @@ const MusicPlay = () => {
         </View>
     );
 
-    // console.log('1234567890', route.params?.track)
+    console.log('1234567890', route.params)
+    // console.log('00000000000000', asyncParams)
 
     return (
         <SafeAreaView style={styles.container}>

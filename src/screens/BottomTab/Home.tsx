@@ -21,6 +21,7 @@ import {
 import Loader from '../../utils/helper/Loader';
 import { useTranslation } from '../../utils/hooks/useTranslation';
 import BannerAdComponent from '../../component/BannerAdComponent';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const BellIcon = () => (
   <View
@@ -482,13 +483,14 @@ const Home = () => {
                         key={track.id}
                         style={styles.trackRow}
                         activeOpacity={0.7}
-                        onPress={() =>
-                          navigation.navigate('MusicPlay', {
+                        onPress={async () => {
+                          await AsyncStorage.setItem('musicPlayParams', JSON.stringify({
                             track: track.raw || track,
                             fromScreen: 'Home',
                             type_id: section.type_id,
-                          })
-                        }
+                          }));
+                          navigation.navigate('MusicPlay');
+                        }}
                       >
                         <Image
                           source={{ uri: track.image }}
@@ -526,12 +528,14 @@ const Home = () => {
                   mappedItems,
                   isPlaylist,
                   type === 'song'
-                    ? track =>
-                      navigation.navigate('MusicPlay', {
-                        track: track.raw || track,
-                        fromScreen: 'Home',
-                        type_id: section.type_id,
-                      })
+                    ? async track => {
+                        await AsyncStorage.setItem('musicPlayParams', JSON.stringify({
+                          track: track.raw || track,
+                          fromScreen: 'Home',
+                          type_id: section.type_id,
+                        }));
+                        navigation.navigate('MusicPlay');
+                      }
                     : type === 'playlist'
                       ? item =>
                         navigation.navigate('PlayList', {
