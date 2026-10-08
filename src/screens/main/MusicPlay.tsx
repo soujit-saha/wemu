@@ -101,6 +101,7 @@ const MusicPlay = () => {
     const [isLiked, setIsLiked] = useState(!!(track?.is_liked || track?.raw?.is_liked));
     const [isMenuModalVisible, setIsMenuModalVisible] = useState(false);
     const [isArtistFollowing, setIsArtistFollowing] = useState(!!(track?.artist?.is_followed || track?.artist?.raw?.is_followed));
+    const [followerCount, setFollowerCount] = useState<number | undefined>(track?.artist?.total_followers);
     const [showLyrics, setShowLyrics] = useState(false);
     const [expandLyrics, setExpandLyrics] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
@@ -232,7 +233,7 @@ const MusicPlay = () => {
             }
         } else if (event.type === Event.PlaybackQueueEnded) {
             if (handleSkipNextRef.current) {
-                handleSkipNextRef.current();
+                handleSkipNextRef.current(false);
             }
         }
     });
@@ -240,6 +241,7 @@ const MusicPlay = () => {
     useEffect(() => {
         setIsLiked(!!(track?.is_liked || track?.raw?.is_liked));
         setIsArtistFollowing(!!(track?.artist?.is_followed || track?.artist?.raw?.is_followed));
+        setFollowerCount(track?.artist?.total_followers);
 
         if (track?.id) {
             dispatch(increasePlayCountRequest({ id: track.id }));
@@ -446,8 +448,8 @@ const MusicPlay = () => {
         return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
     };
 
-    const handleSkipNext = async () => {
-        if (!isSkipPremission) {
+    const handleSkipNext = async (isManual = true) => {
+        if (isManual && !isSkipPremission) {
             ToastAlert("You not allow to do more with current plan");
             return;
         }
@@ -480,8 +482,8 @@ const MusicPlay = () => {
         handleSkipNextRef.current = handleSkipNext;
     });
 
-    const handleSkipPrevious = async () => {
-        if (!isSkipPremission) {
+    const handleSkipPrevious = async (isManual = true) => {
+        if (isManual && !isSkipPremission) {
             ToastAlert("You not allow to do more with this plan");
             return;
         }
@@ -753,7 +755,7 @@ const MusicPlay = () => {
 
                             {/* Skip Previous */}
                             <TouchableOpacity
-                                onPress={handleSkipPrevious}
+                                onPress={() => handleSkipPrevious(true)}
                                 style={[styles.controlButton, { opacity: isSkipPremission ? 1 : 0.5 }]}
                                 activeOpacity={0.7}
                             >
@@ -771,7 +773,7 @@ const MusicPlay = () => {
 
                             {/* Skip Next */}
                             <TouchableOpacity
-                                onPress={handleSkipNext}
+                                onPress={() => handleSkipNext(true)}
                                 style={[styles.controlButton, { opacity: isSkipPremission ? 1 : 0.5 }]}
                                 activeOpacity={0.7}
                             >
@@ -859,6 +861,10 @@ const MusicPlay = () => {
                                 ]}
                                 onPress={() => {
                                     setIsArtistFollowing(!isArtistFollowing);
+                                    setFollowerCount(prev => {
+                                        if (prev === undefined) return prev;
+                                        return isArtistFollowing ? Math.max(0, prev - 1) : prev + 1;
+                                    });
                                     const artistId = track?.artist?.id || track?.artist_id;
                                     if (artistId) {
                                         dispatch(toggleArtistFollowRequest(artistId));
@@ -875,11 +881,13 @@ const MusicPlay = () => {
                             </TouchableOpacity>
                         </View>
                         <Text style={styles.monthlyListeners}>
-                            {track?.artist?.total_followers !== undefined
-                                ? `${track.artist.total_followers} ${t('followers').toLowerCase()}`
+                            {followerCount !== undefined
+                                ? `${followerCount} ${t('followers').toLowerCase()}`
                                 : `0 ${t('followers').toLowerCase()}`}
                         </Text>
-                        <Text style={styles.artistBio} numberOfLines={3}>
+                        <Text style={styles.artistBio}
+                        // numberOfLines={3}
+                        >
                             {track?.artist?.bio || t('noBiography')}
                         </Text>
                     </View>
