@@ -140,13 +140,13 @@ const HelpSupport: FunctionComponent = () => {
               <Image source={ICONS.leftarrow} style={styles.backIcon} />
             </TouchableOpacity>
             <Text style={styles.modalHeaderTitle}>{
-              selectedItem === 'Help Center' ? t('helpCenter') : 
-              selectedItem === 'Contact Us' ? t('contactUs') :
-              selectedItem === 'Report a Problem' ? t('reportProblem') :
-              selectedItem === 'Terms & Conditions' ? t('termsConditions') :
-              selectedItem === 'Privacy Policy' ? t('privacyPolicy') :
-              selectedItem === 'Community Guidelines' ? t('communityGuidelines') :
-              selectedItem
+              selectedItem === 'Help Center' ? t('helpCenter') :
+                selectedItem === 'Contact Us' ? t('contactUs') :
+                  selectedItem === 'Report a Problem' ? t('reportProblem') :
+                    selectedItem === 'Terms & Conditions' ? t('termsConditions') :
+                      selectedItem === 'Privacy Policy' ? t('privacyPolicy') :
+                        selectedItem === 'Community Guidelines' ? t('communityGuidelines') :
+                          selectedItem
             }</Text>
             <View style={{ width: ms(40) }} />
           </View>
@@ -215,13 +215,13 @@ const HelpSupport: FunctionComponent = () => {
               ) : ['Contact Us', 'Terms & Conditions', 'Privacy Policy', 'Community Guidelines'].includes(selectedItem || '') ? (
                 <View style={styles.cmsContainer}>
                   <Text style={styles.cmsTitle}>{getCmsRes?.data?.title || getCmsRes?.data?.data?.title || (
-                    selectedItem === 'Help Center' ? t('helpCenter') : 
-                    selectedItem === 'Contact Us' ? t('contactUs') :
-                    selectedItem === 'Report a Problem' ? t('reportProblem') :
-                    selectedItem === 'Terms & Conditions' ? t('termsConditions') :
-                    selectedItem === 'Privacy Policy' ? t('privacyPolicy') :
-                    selectedItem === 'Community Guidelines' ? t('communityGuidelines') :
-                    selectedItem
+                    selectedItem === 'Help Center' ? t('helpCenter') :
+                      selectedItem === 'Contact Us' ? t('contactUs') :
+                        selectedItem === 'Report a Problem' ? t('reportProblem') :
+                          selectedItem === 'Terms & Conditions' ? t('termsConditions') :
+                            selectedItem === 'Privacy Policy' ? t('privacyPolicy') :
+                              selectedItem === 'Community Guidelines' ? t('communityGuidelines') :
+                                selectedItem
                   )}</Text>
                   {(getCmsRes?.data?.content || getCmsRes?.data?.data?.content || getCmsRes?.data?.description) ? (
                     <RenderHtml
@@ -249,13 +249,13 @@ const HelpSupport: FunctionComponent = () => {
                 <View style={styles.defaultModalContainer}>
                   <Text style={styles.defaultModalText}>
                     {t('informationAbout')}{
-                      selectedItem === 'Help Center' ? t('helpCenter') : 
-                      selectedItem === 'Contact Us' ? t('contactUs') :
-                      selectedItem === 'Report a Problem' ? t('reportProblem') :
-                      selectedItem === 'Terms & Conditions' ? t('termsConditions') :
-                      selectedItem === 'Privacy Policy' ? t('privacyPolicy') :
-                      selectedItem === 'Community Guidelines' ? t('communityGuidelines') :
-                      selectedItem
+                      selectedItem === 'Help Center' ? t('helpCenter') :
+                        selectedItem === 'Contact Us' ? t('contactUs') :
+                          selectedItem === 'Report a Problem' ? t('reportProblem') :
+                            selectedItem === 'Terms & Conditions' ? t('termsConditions') :
+                              selectedItem === 'Privacy Policy' ? t('privacyPolicy') :
+                                selectedItem === 'Community Guidelines' ? t('communityGuidelines') :
+                                  selectedItem
                     }{t('willBeAvailableSoon')}
                   </Text>
                 </View>

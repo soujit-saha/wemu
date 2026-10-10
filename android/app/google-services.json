@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "201125485215-qgjuras23nr2sv4nvh8q5c1fdamgcjkj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.onlinemusic.wemu",
+            "certificate_hash": "0b89f4b78bdf85959e686949b48da4e121ffed45"
+          }
+        },
+        {
           "client_id": "201125485215-kcden6ngcv3gjkoj5e77h4ol52b65ms1.apps.googleusercontent.com",
           "client_type": 3
         }

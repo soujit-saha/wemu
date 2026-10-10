@@ -13,6 +13,7 @@ import {
   Image,
   Modal,
   Pressable,
+  useWindowDimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,8 +21,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import { COLORS, FONTS, ICONS } from '../../utils/constants';
 import { ms } from '../../utils/helper/metric';
 import { signupRequest } from '../../redux/reducer/AuthReducer';
+import { getCmsRequest } from '../../redux/reducer/MainReducer';
 import ToastAlert from '../../utils/helper/Toast';
 import { useTranslation } from '../../utils/hooks/useTranslation';
+import RenderHtml from 'react-native-render-html';
 
 const Signup = () => {
   const navigation = useNavigation<any>();
@@ -36,13 +39,26 @@ const Signup = () => {
   const [secureConfirmText, setSecureConfirmText] = useState(true);
   const [agree, setAgree] = useState(false);
   const [showLangModal, setShowLangModal] = useState(false);
+  const [cmsModalVisible, setCmsModalVisible] = useState(false);
+  const [selectedCms, setSelectedCms] = useState<string | null>(null);
+  const { width } = useWindowDimensions();
   const { t, lang, changeLanguage } = useTranslation();
 
   const { isReqLoading } = useSelector((state: any) => state.AuthReducer);
+  const { getCmsRes } = useSelector((state: any) => state.MainReducer);
 
   const selectLanguage = (selectedLang: 'en' | 'es') => {
     changeLanguage(selectedLang);
     setShowLangModal(false);
+  };
+
+  const handleOpenCmsModal = (item: string) => {
+    setSelectedCms(item);
+    setCmsModalVisible(true);
+    let slug = '';
+    if (item === 'Terms & Conditions') slug = 'terms-conditions';
+    if (item === 'Privacy Policy') slug = 'privacy-policy';
+    dispatch(getCmsRequest(slug));
   };
 
   const handleSignup = () => {
@@ -212,19 +228,26 @@ const Signup = () => {
             </View>
 
             {/* Checkbox row */}
-            <TouchableOpacity
+            <View
               style={styles.checkboxContainer}
-              onPress={() => setAgree(!agree)}
-              activeOpacity={0.8}
-              disabled={isReqLoading}
+
             >
-              <View style={[styles.checkbox, agree && styles.checkboxActive]}>
+              <TouchableOpacity onPress={() => setAgree(!agree)}
+                activeOpacity={0.8}
+                disabled={isReqLoading} style={[styles.checkbox, agree && styles.checkboxActive]}>
                 {agree && <Text style={styles.checkMark}>✓</Text>}
-              </View>
+              </TouchableOpacity>
               <Text style={styles.checkboxLabel}>
-                {t('agreeTo')}<Text style={styles.linkText}>{t('termsOfUse')}</Text>{t('and')}<Text style={styles.linkText}>{t('privacyPolicy')}</Text>.
+                {t('agreeTo')}
+                <Text style={styles.linkText} onPress={() => handleOpenCmsModal('Terms & Conditions')}>
+                  {t('termsOfUse')}
+                </Text>
+                {t('and')}
+                <Text style={styles.linkText} onPress={() => handleOpenCmsModal('Privacy Policy')}>
+                  {t('privacyPolicy')}
+                </Text>.
               </Text>
-            </TouchableOpacity>
+            </View>
 
             <TouchableOpacity
               style={styles.primaryButton}
@@ -307,6 +330,64 @@ const Signup = () => {
             </TouchableOpacity>
           </View>
         </Pressable>
+      </Modal>
+
+      {/* CMS Modal */}
+      <Modal
+        visible={cmsModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setCmsModalVisible(false)}
+      >
+        <SafeAreaView style={styles.cmsModalContainer}>
+          <View style={styles.cmsModalHeader}>
+            <TouchableOpacity onPress={() => setCmsModalVisible(false)} style={styles.cmsBackButton} activeOpacity={0.7}>
+              <Image source={ICONS.leftarrow} style={styles.cmsBackIcon} />
+            </TouchableOpacity>
+            <Text style={styles.cmsModalHeaderTitle}>{
+              selectedCms === 'Terms & Conditions' ? t('termsOfUse') :
+              selectedCms === 'Privacy Policy' ? t('privacyPolicy') :
+              selectedCms
+            }</Text>
+            <View style={{ width: ms(40) }} />
+          </View>
+
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1 }}
+          >
+            <ScrollView contentContainerStyle={styles.cmsScrollContent}>
+              <View style={styles.cmsContentContainer}>
+                <Text style={styles.cmsTitle}>{getCmsRes?.data?.title || getCmsRes?.data?.data?.title || (
+                  selectedCms === 'Terms & Conditions' ? t('termsOfUse') :
+                  selectedCms === 'Privacy Policy' ? t('privacyPolicy') :
+                  selectedCms
+                )}</Text>
+                {(getCmsRes?.data?.content || getCmsRes?.data?.data?.content || getCmsRes?.data?.description) ? (
+                  <RenderHtml
+                    contentWidth={width - ms(48)}
+                    source={{ html: getCmsRes?.data?.content || getCmsRes?.data?.data?.content || getCmsRes?.data?.description }}
+                    baseStyle={{
+                      fontFamily: FONTS.regular24 || 'System',
+                      fontSize: ms(15),
+                      color: '#4B5563',
+                      lineHeight: ms(24),
+                    }}
+                    tagsStyles={{
+                      p: { marginVertical: ms(4) },
+                      h1: { fontFamily: FONTS.bold28 || 'System', fontSize: ms(22), color: '#111827' },
+                      h2: { fontFamily: FONTS.bold28 || 'System', fontSize: ms(20), color: '#111827' },
+                      a: { color: '#6337EB', textDecorationLine: 'none' },
+                      li: { marginBottom: ms(4) },
+                    }}
+                  />
+                ) : (
+                  <Text style={styles.cmsContentText}>{t('contentLoading')}</Text>
+                )}
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
       </Modal>
     </SafeAreaView>
   );
@@ -546,5 +627,57 @@ const styles = StyleSheet.create({
     fontSize: ms(18),
     color: '#6337EB',
     fontWeight: 'bold',
+  },
+  cmsModalContainer: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  cmsModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: ms(16),
+    height: ms(56),
+    borderBottomWidth: ms(1),
+    borderBottomColor: '#E5E7EB',
+  },
+  cmsBackButton: {
+    width: ms(40),
+    height: ms(40),
+    borderRadius: ms(20),
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+  },
+  cmsBackIcon: {
+    width: ms(18),
+    height: ms(18),
+    resizeMode: 'contain',
+    tintColor: '#111827',
+  },
+  cmsModalHeaderTitle: {
+    fontFamily: FONTS.bold28 || 'System',
+    fontSize: ms(18),
+    color: '#111827',
+  },
+  cmsScrollContent: {
+    flexGrow: 1,
+    padding: ms(20),
+  },
+  cmsContentContainer: {
+    flex: 1,
+    paddingTop: ms(8),
+  },
+  cmsTitle: {
+    fontFamily: FONTS.bold28 || 'System',
+    fontSize: ms(20),
+    color: '#111827',
+    marginBottom: ms(16),
+  },
+  cmsContentText: {
+    fontFamily: FONTS.regular24 || 'System',
+    fontSize: ms(15),
+    color: '#4B5563',
+    lineHeight: ms(24),
   },
 });
