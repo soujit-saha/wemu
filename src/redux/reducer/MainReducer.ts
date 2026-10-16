@@ -40,6 +40,8 @@ export interface MainState {
   toggleArtistFollowRes?: any;
   raiseHelpRes?: any;
   supportArticlesRes?: any;
+  trendingSearchItemsRes?: any;
+  genresRes?: any;
 }
 
 const initialState: MainState = {
@@ -55,6 +57,8 @@ const initialState: MainState = {
   toggleArtistFollowRes: {},
   raiseHelpRes: {},
   supportArticlesRes: {},
+  trendingSearchItemsRes: {},
+  genresRes: {},
 };
 
 const MainSlice = createSlice({
@@ -214,6 +218,38 @@ const MainSlice = createSlice({
       state.error = action.payload?.error || 'getCms failed';
       state.status = action.type;
     },
+
+    // Trending search items
+    getTrendingSearchItemsRequest(state, action: PayloadAction<any>) {
+      state.isMainLoading = true;
+      state.status = action.type;
+    },
+    getTrendingSearchItemsSuccess(state, action: PayloadAction<any>) {
+      state.isMainLoading = false;
+      state.trendingSearchItemsRes = action.payload;
+      state.status = action.type;
+    },
+    getTrendingSearchItemsFailure(state, action: PayloadAction<any>) {
+      state.isMainLoading = false;
+      state.error = action.payload?.error || 'getTrendingSearchItems failed';
+      state.status = action.type;
+    },
+
+    // Genres
+    getGenresRequest(state, action: PayloadAction<any>) {
+      state.isMainLoading = true;
+      state.status = action.type;
+    },
+    getGenresSuccess(state, action: PayloadAction<any>) {
+      state.isMainLoading = false;
+      state.genresRes = action.payload;
+      state.status = action.type;
+    },
+    getGenresFailure(state, action: PayloadAction<any>) {
+      state.isMainLoading = false;
+      state.error = action.payload?.error || 'getGenres failed';
+      state.status = action.type;
+    },
   },
 });
 
@@ -257,6 +293,23 @@ export const {
   getCmsRequest,
   getCmsSuccess,
   getCmsFailure,
+
+  getTrendingSearchItemsRequest,
+  getTrendingSearchItemsSuccess,
+  getTrendingSearchItemsFailure,
+
+  getGenresRequest,
+  getGenresSuccess,
+  getGenresFailure,
 } = MainSlice.actions;
+
+// Aliases for convenience
+export const trendingSearchItemsRequest = getTrendingSearchItemsRequest;
+export const trendingSearchItemsSuccess = getTrendingSearchItemsSuccess;
+export const trendingSearchItemsFailure = getTrendingSearchItemsFailure;
+
+export const genresRequest = getGenresRequest;
+export const genresSuccess = getGenresSuccess;
+export const genresFailure = getGenresFailure;
 
 export default MainSlice.reducer;

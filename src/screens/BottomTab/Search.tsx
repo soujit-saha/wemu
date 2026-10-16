@@ -19,6 +19,10 @@ import { ms } from '../../utils/helper/metric';
 import FloatingPlayer from '../../component/FloatingPlayer';
 import { useTranslation } from '../../utils/hooks/useTranslation';
 import { searchSongRequest } from '../../redux/reducer/SongReducer';
+import {
+  getTrendingSearchItemsRequest,
+  getGenresRequest,
+} from '../../redux/reducer/MainReducer';
 import BannerAdComponent from '../../component/BannerAdComponent';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -43,6 +47,17 @@ const TRENDING_SEARCHES = [
 
 const FILTER_TABS = ['Songs', 'Albums', 'Artists', 'Playlists'];
 
+const CATEGORY_COLORS = [
+  { bg: '#C4D9FC', text: '#1E3A8A' },
+  { bg: '#FDE6C8', text: '#92400E' },
+  { bg: '#DDD6FE', text: '#5B21B6' },
+  { bg: '#CCFBF1', text: '#0F766E' },
+  { bg: '#FEE2E2', text: '#991B1B' },
+  { bg: '#E0F2FE', text: '#075985' },
+  { bg: '#FCE7F3', text: '#9D174D' },
+  { bg: '#FEF3C7', text: '#92400E' },
+];
+
 const Search = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
@@ -60,6 +75,65 @@ const Search = () => {
   const { searchSongRes, isLoading } = useSelector(
     (state: any) => state.SongReducer,
   );
+  const { trendingSearchItemsRes, genresRes } = useSelector(
+    (state: any) => state.MainReducer,
+  );
+
+  useEffect(() => {
+    dispatch(getTrendingSearchItemsRequest({}));
+    dispatch(getGenresRequest({}));
+  }, [dispatch]);
+
+  const categories = useMemo(() => {
+    const rawList =
+      genresRes?.data?.data ??
+      genresRes?.data ??
+      genresRes?.genres ??
+      (Array.isArray(genresRes) ? genresRes : null);
+
+    if (Array.isArray(rawList) && rawList.length > 0) {
+      return rawList.map((item: any, idx: number) => {
+        const color = CATEGORY_COLORS[idx % CATEGORY_COLORS.length];
+        const name =
+          typeof item === 'string'
+            ? item
+            : item?.name || item?.genre || item?.genre_name || item?.title || '';
+        return {
+          id: item?.id ?? item?.uuid ?? `cat-${idx}`,
+          name,
+          bg: item?.bg || item?.color || color.bg,
+          text: item?.text || item?.text_color || color.text,
+        };
+      });
+    }
+    return BROWSE_CATEGORIES;
+  }, [genresRes]);
+
+  const trendingSearches = useMemo(() => {
+    const rawList =
+      trendingSearchItemsRes?.data?.data ??
+      trendingSearchItemsRes?.data ??
+      trendingSearchItemsRes?.trending ??
+      trendingSearchItemsRes?.items ??
+      (Array.isArray(trendingSearchItemsRes) ? trendingSearchItemsRes : null);
+
+    if (Array.isArray(rawList) && rawList.length > 0) {
+      return rawList
+        .map((item: any) => {
+          if (typeof item === 'string') return item;
+          return (
+            item?.keyword ||
+            item?.name ||
+            item?.search_item ||
+            item?.title ||
+            item?.query ||
+            ''
+          );
+        })
+        .filter(Boolean);
+    }
+    return TRENDING_SEARCHES;
+  }, [trendingSearchItemsRes]);
 
   const getSearchType = (tab: string) => {
     switch (tab) {
@@ -257,9 +331,9 @@ const Search = () => {
 
       {/* 2-column Grid of Categories */}
       <View style={styles.categoriesGrid}>
-        {BROWSE_CATEGORIES.map(cat => (
+        {categories.map((cat: any, idx: number) => (
           <TouchableOpacity
-            key={cat.id}
+            key={cat.id || idx}
             style={[styles.categoryCard, { backgroundColor: cat.bg }]}
             activeOpacity={0.8}
             onPress={() => handleSearchItemPress(cat.name)}
@@ -277,7 +351,7 @@ const Search = () => {
 
       {/* List of Trending Searches */}
       <View style={styles.trendingList}>
-        {TRENDING_SEARCHES.map((item, idx) => (
+        {trendingSearches.map((item: string, idx: number) => (
           <TouchableOpacity
             key={idx}
             style={styles.trendingItem}

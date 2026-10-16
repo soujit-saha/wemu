@@ -8,7 +8,8 @@ interface AppConstants {
 
 export const constants: AppConstants = {
   TOKEN: 'TOKEN',
-  BASE_URL: "https://wemu.swastechinfoinnovations.in/web/public/api",
+  BASE_URL: "https://admin.wemu.online/api",
+  // BASE_URL: "https://wemu.swastechinfoinnovations.in/web/public/api",
   StripeKey: "pk_test_51UHQNyEeITHruT4AG439Cu3hjU695yt11NfuZFONnWtrDmAPau3RL8eWlu0xozyM3NrVcEADesl8zVQW405NBvGZ00zniGkI67",
 } as const;
 

@@ -29,6 +29,10 @@ import {
   getCmsRequest,
   getCmsSuccess,
   getCmsFailure,
+  getTrendingSearchItemsSuccess,
+  getTrendingSearchItemsFailure,
+  getGenresSuccess,
+  getGenresFailure,
 } from '../reducer/MainReducer';
 // import { getApi, postApi } from '../../utils/helper/ApiRequest';
 import { ApiHeaders, ApiResponse } from '../types';
@@ -270,6 +274,63 @@ export function* getCmsSaga(
   }
 }
 
+const buildQuery = (payload: any) => {
+  if (!payload || typeof payload !== 'object') return '';
+  const query = Object.keys(payload)
+    .filter(k => payload[k] !== undefined && payload[k] !== '')
+    .map(k => `${encodeURIComponent(k)}=${encodeURIComponent(payload[k])}`)
+    .join('&');
+  return query ? `?${query}` : '';
+};
+
+export function* getTrendingSearchItemsSaga(
+  action: PayloadAction<any>,
+): Generator<any, void, any> {
+  const item = yield select(getItems);
+  const header: ApiHeaders = {
+    Accept: 'application/json',
+    contenttype: 'application/json',
+    accesstoken: item?.getTokenResponse,
+  };
+  try {
+    const query = buildQuery(action?.payload);
+    const response: ApiResponse = yield call(
+      getApi,
+      `trending-search-items${query}`,
+      header,
+    );
+    yield put(getTrendingSearchItemsSuccess(response?.data));
+  } catch (error: any) {
+    yield put(getTrendingSearchItemsFailure(error));
+    ToastAlert(
+      error?.response?.data?.message || 'Failed to fetch trending search items',
+    );
+  }
+}
+
+export const trendingSearchItemsSaga = getTrendingSearchItemsSaga;
+
+export function* getGenresSaga(
+  action: PayloadAction<any>,
+): Generator<any, void, any> {
+  const item = yield select(getItems);
+  const header: ApiHeaders = {
+    Accept: 'application/json',
+    contenttype: 'application/json',
+    accesstoken: item?.getTokenResponse,
+  };
+  try {
+    const query = buildQuery(action?.payload);
+    const response: ApiResponse = yield call(getApi, `genres${query}`, header);
+    yield put(getGenresSuccess(response?.data));
+  } catch (error: any) {
+    yield put(getGenresFailure(error));
+    ToastAlert(error?.response?.data?.message || 'Failed to fetch genres');
+  }
+}
+
+export const genresSaga = getGenresSaga;
+
 // Watcher Saga
 export function* watchMainSaga(): Generator<any, void, any> {
   yield takeLatest('Main/myProfileRequest', myProfileSaga);
@@ -282,4 +343,14 @@ export function* watchMainSaga(): Generator<any, void, any> {
   yield takeLatest('Main/raiseHelpRequest', raiseHelpSaga);
   yield takeLatest('Main/supportArticlesRequest', supportArticlesSaga);
   yield takeLatest('Main/getCmsRequest', getCmsSaga);
+  yield takeLatest(
+    'Main/getTrendingSearchItemsRequest',
+    getTrendingSearchItemsSaga,
+  );
+  yield takeLatest(
+    'Main/trendingSearchItemsRequest',
+    getTrendingSearchItemsSaga,
+  );
+  yield takeLatest('Main/getGenresRequest', getGenresSaga);
+  yield takeLatest('Main/genresRequest', getGenresSaga);
 }

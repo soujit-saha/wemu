@@ -31,8 +31,8 @@ const Library = () => {
   const dispatch = useDispatch();
 
   const [activeTab, setActiveTab] = useState<
-    'playlists' | 'albums' | 'artists'
-  >('playlists');
+    'albums' | 'playlists' | 'artists'
+  >('albums');
   const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(1);
   const [localData, setLocalData] = useState<any[]>([]);
@@ -181,23 +181,6 @@ const Library = () => {
         >
           <TouchableOpacity
             style={
-              activeTab === 'playlists' ? styles.activeTag : styles.inactiveTag
-            }
-            activeOpacity={0.8}
-            onPress={() => setActiveTab('playlists')}
-          >
-            <Text
-              style={
-                activeTab === 'playlists'
-                  ? styles.activeTagText
-                  : styles.inactiveTagText
-              }
-            >
-              {t('playlists')}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={
               activeTab === 'albums' ? styles.activeTag : styles.inactiveTag
             }
             activeOpacity={0.8}
@@ -213,6 +196,24 @@ const Library = () => {
               {t('albums')}
             </Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={
+              activeTab === 'playlists' ? styles.activeTag : styles.inactiveTag
+            }
+            activeOpacity={0.8}
+            onPress={() => setActiveTab('playlists')}
+          >
+            <Text
+              style={
+                activeTab === 'playlists'
+                  ? styles.activeTagText
+                  : styles.inactiveTagText
+              }
+            >
+              {t('playlists')}
+            </Text>
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={
               activeTab === 'artists' ? styles.activeTag : styles.inactiveTag
@@ -334,8 +335,9 @@ const Library = () => {
                     {item.title || item.name}
                   </Text>
                   <Text style={styles.artistRole}>
-                    {t('album')}{' '}
-                    {item.artist_name ? `• ${item.artist_name}` : ''}
+                    {/* {t('album')}{' '} */}
+                    {item.created_by?.name
+                      ? `• ${item.created_by.name}` : ''}
                   </Text>
                 </View>
               </TouchableOpacity>
